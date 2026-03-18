@@ -4,6 +4,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -14,10 +16,44 @@ app.use(cors());
 app.use(express.json());            
 app.use(express.static('public'));  
 
+// ===== EMAIL CONFIGURATION (ETHEREAL) =====
+let transporter;
+
+async function setupEmailTransport() {
+    try {
+        // Create a test account with Ethereal Email
+        const testAccount = await nodemailer.createTestAccount();
+        
+        transporter = nodemailer.createTransport({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+                user: testAccount.user,
+                pass: testAccount.pass
+            }
+        });
+        
+        console.log('✅ Ethereal Email service ready');
+        console.log('📧 Test Email:', testAccount.user);
+        console.log('🔐 Password:', testAccount.pass);
+        console.log('💡 Preview emails at: https://ethereal.email');
+        
+        // Store for later use
+        global.testAccount = testAccount;
+    } catch (error) {
+        console.error('❌ Email setup failed:', error);
+    }
+}
+
+// Initialize email on startup
+setupEmailTransport();
+
 console.log('\n🔍 ===== KONKMENG AI SYSTEM =====');
 console.log('🔑 GROQ_API_KEY exists:', !!process.env.GROQ_API_KEY);
 console.log('🔑 MONGODB_URI exists:', !!process.env.MONGODB_URI);
 console.log('🔑 JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('📧 EMAIL_SERVICE: Ethereal Email (Test/Development)');
 console.log('🔑 PORT:', PORT);
 console.log('================================\n');
 
@@ -46,9 +82,16 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
         minlength: 8,
         select: false
+    },
+    avatar: {
+        type: String,
+        default: null
+    },
+    bio: {
+        type: String,
+        default: ''
     },
     createdAt: {
         type: Date,
@@ -57,6 +100,10 @@ const userSchema = new mongoose.Schema({
     lastLogin: {
         type: Date
     },
+    passwordResetToken: String,
+    passwordResetExpiry: Date,
+    googleId: String,
+    githubId: String,
     savedCodes: [{
         title: String,
         code: String,
@@ -80,21 +127,20 @@ const userSchema = new mongoose.Schema({
 });
 
 // Encrypt password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
     try {
         console.log('🔐 Hashing password for user:', this.email);
         
         if (!this.isModified('password')) {
-            return next();
+            return;
         }
         
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
         console.log('✅ Password hashed successfully');
-        next();
     } catch (error) {
         console.error('❌ Error hashing password:', error);
-        next(error);
+        throw error;
     }
 });
 
@@ -369,6 +415,678 @@ app.get('/api/auth/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// ===== USER UPDATE ENDPOINTS =====
+
+/**
+ * @route PUT /api/auth/update
+ * @desc Update user profile (name)
+ * @access Private
+ */
+app.put('/api/auth/update', authenticateToken, async (req, res) => {
+    try {
+        const { name } = req.body;
+        
+        if (!name) {
+            return res.status(400).json({
+                success: false,
+                error: 'Name is required'
+            });
+        }
+        
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { name },
+            { new: true, runValidators: true }
+        );
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        console.log('✅ User name updated:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('❌ Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update profile',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/auth/change-password
+ * @desc Change user password
+ * @access Private
+ */
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'Current password and new password are required'
+            });
+        }
+        
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                error: 'New password must be at least 8 characters'
+            });
+        }
+        
+        // Get user with password field
+        const user = await User.findById(req.user.id).select('+password');
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        // Verify current password
+        const isPasswordValid = await user.comparePassword(currentPassword);
+        
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                error: 'Current password is incorrect'
+            });
+        }
+        
+        // Update password
+        user.password = newPassword;
+        await user.save();
+        
+        console.log('✅ Password changed for user:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+    } catch (error) {
+        console.error('❌ Change password error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to change password',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route DELETE /api/auth/delete
+ * @desc Delete user account
+ * @access Private
+ */
+app.delete('/api/auth/delete', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        console.log('⚠️ User account deleted:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Account deleted successfully'
+        });
+    } catch (error) {
+        console.error('❌ Delete account error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete account',
+            message: error.message
+        });
+    }
+});
+
+// ===== PASSWORD RESET ENDPOINTS =====
+
+/**
+ * @route POST /api/auth/forgot-password
+ * @desc Send password reset email
+ * @access Public
+ */
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required'
+            });
+        }
+        
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            // Don't reveal if user exists or not for security
+            return res.json({
+                success: true,
+                message: 'If an account exists with this email, a reset link has been sent'
+            });
+        }
+        
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+        
+        // Set reset token expiry to 30 minutes
+        user.passwordResetToken = resetTokenHash;
+        user.passwordResetExpiry = new Date(Date.now() + 30 * 60 * 1000);
+        
+        await user.save();
+        
+        // Create reset link
+        const resetLink = `http://localhost:3000/?resetToken=${resetToken}`;
+        
+        // Send email
+        try {
+            const mailOptions = {
+                from: global.testAccount ? global.testAccount.user : 'konkmeng@ethereal.email',
+                to: email,
+                subject: '🔐 KONKMENG - Password Reset Request',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fc; border-radius: 10px;">
+                        <h2 style="color: #3b82f6; text-align: center;">🔐 Password Reset Request</h2>
+                        
+                        <p style="color: #1e293b; line-height: 1.6;">
+                            Hello <strong>${user.name}</strong>,
+                        </p>
+                        
+                        <p style="color: #1e293b; line-height: 1.6;">
+                            We received a request to reset your password. Click the button below to create a new password. This link will expire in 30 minutes.
+                        </p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${resetLink}" style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Reset Password
+                            </a>
+                        </div>
+                        
+                        <p style="color: #64748b; font-size: 14px;">
+                            Or copy and paste this link in your browser:
+                        </p>
+                        <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background-color: #fff; padding: 10px; border-radius: 5px;">
+                            ${resetLink}
+                        </p>
+                        
+                        <div style="border-top: 1px solid #e2e8f0; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #94a3b8; text-align: center;">
+                            <p>If you didn't request a password reset, please ignore this email or contact support.</p>
+                            <p style="margin-top: 10px;">© 2026 KONKMENG. All rights reserved.</p>
+                        </div>
+                    </div>
+                `
+            };
+            
+            const info = await transporter.sendMail(mailOptions);
+            console.log('✅ Password reset email sent to:', email);
+            
+            // Get preview URL for test account
+            let responseData = {
+                success: true,
+                message: 'Password reset link sent to your email'
+            };
+            
+            if (global.testAccount) {
+                const previewUrl = nodemailer.getTestMessageUrl(info);
+                responseData.previewUrl = previewUrl;
+                console.log('📧 Email preview URL:', previewUrl);
+            }
+            
+            res.json(responseData);
+            
+        } catch (emailError) {
+            console.error('⚠️  Failed to send email:', emailError.message);
+            
+            // Clear reset token if email fails
+            user.passwordResetToken = undefined;
+            user.passwordResetExpiry = undefined;
+            await user.save();
+            
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to send reset email',
+                message: 'Email service error: ' + emailError.message
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to process request',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/auth/reset-password
+ * @desc Reset password with token
+ * @access Public
+ */
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'Token and new password are required'
+            });
+        }
+        
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                error: 'Password must be at least 8 characters'
+            });
+        }
+        
+        // Hash the token to match with stored token
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        
+        // Find user with valid reset token
+        const user = await User.findOne({
+            passwordResetToken: tokenHash,
+            passwordResetExpiry: { $gt: Date.now() }
+        });
+        
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                error: 'Reset token is invalid or expired'
+            });
+        }
+        
+        // Update password
+        user.password = newPassword;
+        user.passwordResetToken = undefined;
+        user.passwordResetExpiry = undefined;
+        
+        await user.save();
+        
+        console.log('✅ Password reset successful for:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Password reset successful. Please login with your new password.'
+        });
+        
+    } catch (error) {
+        console.error('❌ Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to reset password',
+            message: error.message
+        });
+    }
+});
+
+// ===== PROFILE PHOTO UPLOAD =====
+
+/**
+ * @route POST /api/auth/upload-avatar
+ * @desc Upload user avatar as base64
+ * @access Private
+ */
+app.post('/api/auth/upload-avatar', authenticateToken, async (req, res) => {
+    try {
+        const { avatar } = req.body;  // Expect base64 image
+        
+        if (!avatar) {
+            return res.status(400).json({
+                success: false,
+                error: 'Avatar data is required'
+            });
+        }
+        
+        // Validate base64 format
+        if (!avatar.startsWith('data:image/')) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid image format'
+            });
+        }
+        
+        // Limit size to 5MB
+        if (avatar.length > 5 * 1024 * 1024) {
+            return res.status(400).json({
+                success: false,
+                error: 'Image size exceeds 5MB limit'
+            });
+        }
+        
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { avatar },
+            { new: true }
+        );
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        console.log('✅ Avatar uploaded for user:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Avatar uploaded successfully',
+            avatar: user.avatar
+        });
+        
+    } catch (error) {
+        console.error('❌ Avatar upload error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to upload avatar',
+            message: error.message
+        });
+    }
+});
+
+// ===== CODE SAVE/DELETE ENDPOINTS =====
+
+/**
+ * @route POST /api/codes/save
+ * @desc Save code to user's collection
+ * @access Private
+ */
+app.post('/api/codes/save', authenticateToken, async (req, res) => {
+    try {
+        const { title, code, language } = req.body;
+        
+        if (!code) {
+            return res.status(400).json({
+                success: false,
+                error: 'Code is required'
+            });
+        }
+        
+        const user = await User.findById(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        // Add code to savedCodes array
+        const newCode = {
+            title: title || 'Untitled',
+            code,
+            language: language || 'JavaScript',
+            createdAt: new Date()
+        };
+        
+        if (!user.savedCodes) {
+            user.savedCodes = [];
+        }
+        
+        user.savedCodes.push(newCode);
+        await user.save();
+        
+        console.log('✅ Code saved for user:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Code saved successfully',
+            code: newCode
+        });
+    } catch (error) {
+        console.error('❌ Save code error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to save code',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route DELETE /api/codes/:id
+ * @desc Delete saved code
+ * @access Private
+ */
+app.delete('/api/codes/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const user = await User.findById(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
+        // Filter out the code
+        user.savedCodes = user.savedCodes.filter(code => code._id.toString() !== id);
+        await user.save();
+        
+        console.log('✅ Code deleted for user:', user.email);
+        
+        res.json({
+            success: true,
+            message: 'Code deleted successfully'
+        });
+    } catch (error) {
+        console.error('❌ Delete code error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete code',
+            message: error.message
+        });
+    }
+});
+
+// ===== OAUTH AUTHENTICATION ROUTES =====
+
+/**
+ * @route POST /api/auth/google
+ * @desc Authenticate with Google OAuth
+ * @access Public
+ */
+app.post('/api/auth/google', async (req, res) => {
+    try {
+        const { idToken, email, name, picture } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email is required'
+            });
+        }
+        
+        // Find or create user
+        let user = await User.findOne({ email: email.toLowerCase() });
+        
+        if (!user) {
+            // Create new user with Google account
+            user = new User({
+                name: name || email.split('@')[0],
+                email: email.toLowerCase(),
+                password: crypto.randomBytes(16).toString('hex'), // Random password
+                googleId: email, // Use email as identifier
+                avatar: picture || null
+            });
+            
+            await user.save();
+            console.log('✅ New user created via Google OAuth:', email);
+        } else if (!user.googleId) {
+            // Link Google account to existing user
+            user.googleId = email;
+            if (picture && !user.avatar) {
+                user.avatar = picture;
+            }
+            await user.save();
+            console.log('✅ Google OAuth linked to existing user:', email);
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: 'Google login successful',
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Google OAuth error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Google authentication failed',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * @route POST /api/auth/github
+ * @desc Authenticate with GitHub OAuth
+ * @access Public
+ */
+app.post('/api/auth/github', async (req, res) => {
+    try {
+        const { code } = req.body;
+        
+        if (!code) {
+            return res.status(400).json({
+                success: false,
+                error: 'GitHub authorization code is required'
+            });
+        }
+        
+        // Exchange code for access token
+        const tokenResponse = await axios.post(
+            'https://github.com/login/oauth/access_token',
+            {
+                client_id: process.env.GITHUB_CLIENT_ID,
+                client_secret: process.env.GITHUB_CLIENT_SECRET,
+                code
+            },
+            { headers: { Accept: 'application/json' } }
+        );
+        
+        const { access_token } = tokenResponse.data;
+        
+        if (!access_token) {
+            return res.status(400).json({
+                success: false,
+                error: 'Failed to obtain GitHub access token'
+            });
+        }
+        
+        // Get user info from GitHub
+        const userResponse = await axios.get('https://api.github.com/user', {
+            headers: { Authorization: `token ${access_token}` }
+        });
+        
+        const { login, name, avatar_url, email: githubEmail } = userResponse.data;
+        const userEmail = githubEmail || `${login}@github.com`;
+        
+        // Find or create user
+        let user = await User.findOne({ email: userEmail.toLowerCase() });
+        
+        if (!user) {
+            // Create new user with GitHub account
+            user = new User({
+                name: name || login || 'GitHub User',
+                email: userEmail.toLowerCase(),
+                password: crypto.randomBytes(16).toString('hex'), // Random password
+                githubId: login,
+                avatar: avatar_url || null
+            });
+            
+            await user.save();
+            console.log('✅ New user created via GitHub OAuth:', userEmail);
+        } else if (!user.githubId) {
+            // Link GitHub account to existing user
+            user.githubId = login;
+            if (avatar_url && !user.avatar) {
+                user.avatar = avatar_url;
+            }
+            await user.save();
+            console.log('✅ GitHub OAuth linked to existing user:', userEmail);
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        // Update last login
+        user.lastLogin = new Date();
+        await user.save();
+        
+        res.json({
+            success: true,
+            message: 'GitHub login successful',
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                avatar: user.avatar
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ GitHub OAuth error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'GitHub authentication failed',
+            message: error.message
+        });
+    }
+});
+
 // ===== CODE ANALYSIS ROUTE =====
 
 // GROQ API CONFIGURATION
@@ -559,6 +1277,33 @@ Please follow the response format.`;
             error: responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed',
             details: error.message,
             solution: responseLang === 'km' ? 'សូមព្យាយាមម្តងទៀត' : 'Please try again'
+        });
+    }
+});
+
+// ===== DIAGNOSTIC ENDPOINT =====
+/**
+ * @route GET /api/debug/users
+ * @desc Get all users in database (FOR TESTING ONLY)
+ */
+app.get('/api/debug/users', async (req, res) => {
+    try {
+        const users = await User.find().select('-password');
+        res.json({
+            success: true,
+            totalUsers: users.length,
+            users: users.map(u => ({
+                id: u._id,
+                name: u.name,
+                email: u.email,
+                createdAt: u.createdAt,
+                lastLogin: u.lastLogin
+            }))
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
         });
     }
 });

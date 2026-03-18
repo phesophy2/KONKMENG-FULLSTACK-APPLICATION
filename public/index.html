@@ -1234,8 +1234,11 @@
                         </select>
                     </div>
                     <!-- EVERYTHING BELOW IS ORIGINAL - UNCHANGED -->
-                    <button class="btn btn-secondary" onclick="openAuthModal('login')">Sign in</button>
-                    <button class="btn btn-primary" onclick="openAuthModal('signup')">Get started</button>
+                    <button id="navProfileBtn" class="nav-link" style="display: none;" onclick="showPage('profile')">
+                        <i class="fa-solid fa-user-circle"></i> Profile
+                    </button>
+                    <button class="btn btn-secondary" id="signInBtn" onclick="openAuthModal('login')">Sign in</button>
+                    <button class="btn btn-primary" id="getStartedBtn" onclick="openAuthModal('signup')">Get started</button>
                 </div>
             </div>
         </nav>
@@ -1378,6 +1381,34 @@
                         
                         <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
                             Send reset link
+                        </button>
+                        
+                        <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="switchAuthForm('login')">
+                            Back to sign in
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Reset Password Form -->
+                <div id="resetPasswordForm" class="auth-form-container" style="display: none;">
+                    <div class="auth-header">
+                        <h2>Create new password</h2>
+                        <p>Enter your new password</p>
+                    </div>
+                    
+                    <form class="auth-form" onsubmit="handleResetPassword(event)">
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <input type="password" id="resetNewPassword" class="form-input" placeholder="At least 8 characters" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" id="resetConfirmPassword" class="form-input" placeholder="Confirm password" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
+                            Reset Password
                         </button>
                         
                         <button type="button" class="btn btn-secondary" style="width: 100%;" onclick="switchAuthForm('login')">
@@ -1750,6 +1781,127 @@
             </div>
         </div>
 
+        <!-- Profile Page -->
+        <div id="page-profile" class="page-section">
+            <div class="container" style="padding: 3rem 0;">
+                <!-- Profile Header -->
+                <div class="profile-header" style="display: flex; align-items: center; gap: 2rem; margin-bottom: 3rem; flex-wrap: wrap; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); padding: 2rem; border-radius: var(--radius-xl);">
+                    <!-- Profile Avatar -->
+                    <div class="profile-avatar" style="position: relative;">
+                        <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; font-weight: 600; box-shadow: var(--shadow-lg);">
+                            <span id="profileInitial">U</span>
+                        </div>
+                        <button class="btn" style="position: absolute; bottom: 0; right: 0; padding: 0.5rem; border-radius: 50%; background: white; border: none; cursor: pointer; box-shadow: var(--shadow-md);" onclick="document.getElementById('avatarUpload').click()" title="Upload photo">
+                            <i class="fa-solid fa-camera" style="color: var(--accent);"></i>
+                        </button>
+                        <input type="file" id="avatarUpload" style="display: none;" accept="image/*">
+                    </div>
+                    
+                    <!-- Profile Info -->
+                    <div style="flex: 1; min-width: 250px;">
+                        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="profileName">Loading...</h1>
+                        <p style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 1rem;" id="profileEmail">Loading...</p>
+                        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);" id="profileSavedCodes">0</div>
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;">Saved Codes</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);" id="profileAnalyses">0</div>
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;">Analyses</span>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);" id="profileMemberSince">-</div>
+                                <span style="color: var(--text-secondary); font-size: 0.875rem;">Member Since</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Profile Button -->
+                    <button class="btn btn-primary" onclick="editProfile()">
+                        <i class="fa-regular fa-pen-to-square"></i> Edit Profile
+                    </button>
+                </div>
+                
+                <!-- Profile Tabs -->
+                <div style="border-bottom: 2px solid var(--border-light); margin-bottom: 2rem; display: flex; gap: 0;">
+                    <button class="profile-tab active" onclick="switchProfileTab(event, 'saved')" style="padding: 1rem 1.5rem; background: none; border: none; color: var(--accent); font-weight: 600; cursor: pointer; border-bottom: 3px solid var(--accent); margin-bottom: -2px; transition: all 0.2s;">
+                        <i class="fa-regular fa-bookmark"></i> Saved Codes
+                    </button>
+                    <button class="profile-tab" onclick="switchProfileTab(event, 'history')" style="padding: 1rem 1.5rem; background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-regular fa-clock"></i> Analysis History
+                    </button>
+                    <button class="profile-tab" onclick="switchProfileTab(event, 'settings')" style="padding: 1rem 1.5rem; background: none; border: none; color: var(--text-secondary); font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </button>
+                </div>
+                
+                <!-- Saved Codes Tab -->
+                <div id="profileSavedTab" style="display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 style="font-size: 1.5rem; font-weight: 600;">My Saved Codes</h3>
+                        <button class="btn btn-primary" onclick="saveCurrentCode()">
+                            <i class="fa-regular fa-bookmark"></i> Save Current Code
+                        </button>
+                    </div>
+                    
+                    <div id="savedCodesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-tertiary);">
+                            <i class="fa-regular fa-bookmark" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>No saved codes yet</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analysis History Tab -->
+                <div id="profileHistoryTab" style="display: none;">
+                    <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Analysis History</h3>
+                    <div id="analysisHistoryList" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="text-align: center; padding: 3rem; color: var(--text-tertiary);">
+                            <i class="fa-regular fa-clock" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>No analysis history yet</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Tab -->
+                <div id="profileSettingsTab" style="display: none;">
+                    <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem;">Account Settings</h3>
+                    
+                    <div style="max-width: 500px;">
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label class="form-label">Display Name</label>
+                            <input type="text" id="settingsName" class="form-input" placeholder="Your name">
+                            <button class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;" onclick="updateName()">Update Name</button>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="settingsEmail" class="form-input" readonly style="background: var(--bg-secondary); cursor: not-allowed;">
+                        </div>
+                        
+                        <hr style="border: none; border-top: 1px solid var(--border-light); margin: 2rem 0;">
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label class="form-label">Change Password</label>
+                            <input type="password" id="settingsCurrentPassword" class="form-input" placeholder="Current Password" style="margin-bottom: 0.5rem;">
+                            <input type="password" id="settingsNewPassword" class="form-input" placeholder="New Password" style="margin-bottom: 0.5rem;">
+                            <input type="password" id="settingsConfirmPassword" class="form-input" placeholder="Confirm New Password" style="margin-bottom: 0.5rem;">
+                            <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="changePassword()">Update Password</button>
+                        </div>
+                        
+                        <hr style="border: none; border-top: 1px solid var(--border-light); margin: 2rem 0;">
+                        
+                        <div style="padding-top: 1rem;">
+                            <button class="btn btn-secondary" style="background: #fee2e2; color: #b91c1c; border-color: #fecaca; width: 100%;" onclick="deleteAccount()">
+                                <i class="fa-regular fa-trash-can"></i> Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer (EXACT ORIGINAL) -->
         <footer class="footer">
             <div class="container">
@@ -1831,26 +1983,32 @@
         const API_BASE_URL = 'http://localhost:3000';
     
         // ===== Check if user is already logged in =====
-        (function checkLoginStatus() {
+        function checkLoginStatus() {
             const token = localStorage.getItem('token');
             const user = localStorage.getItem('user');
             
             if (token && user) {
                 try {
-                    const userData = JSON.parse(user);
-                    const navRight = document.querySelector('.nav-right');
-                    const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
-                    
-                    navRight.innerHTML = `
-                        ${languageSelectHTML}
-                        <span style="color: var(--text-primary); font-weight: 500;">${userData.name}</span>
-                        <button class="btn btn-secondary" onclick="logout()">Logout</button>
-                    `;
+                    document.getElementById('navProfileBtn').style.display = 'inline-block';
+                    document.getElementById('signInBtn').style.display = 'none';
+                    document.getElementById('getStartedBtn').style.display = 'none';
                 } catch (e) {
-                    console.error('Error parsing user data:', e);
+                    console.error('Error updating nav:', e);
                 }
             }
-        })();
+            
+            // Check for GitHub callback
+            const params = new URLSearchParams(window.location.search);
+            const githubCode = params.get('github_callback');
+            if (githubCode) {
+                handleGitHubCallback(githubCode);
+                // Remove callback param from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        // Call on page load
+        checkLoginStatus();
     
         // ===== AUTH MODAL FUNCTIONS =====
         function openAuthModal(type) {
@@ -1916,14 +2074,9 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 
-                const navRight = document.querySelector('.nav-right');
-                const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
-                
-                navRight.innerHTML = `
-                    ${languageSelectHTML}
-                    <span style="color: var(--text-primary); font-weight: 500;">${data.user.name}</span>
-                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
-                `;
+                document.getElementById('navProfileBtn').style.display = 'inline-block';
+                document.getElementById('signInBtn').style.display = 'none';
+                document.getElementById('getStartedBtn').style.display = 'none';
                 
                 alert(data.message);
                 closeAuthModal();
@@ -1987,14 +2140,12 @@
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 
-                const navRight = document.querySelector('.nav-right');
-                const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+                document.getElementById('navProfileBtn').style.display = 'inline-block';
+                document.getElementById('signInBtn').style.display = 'none';
+                document.getElementById('getStartedBtn').style.display = 'none';
                 
-                navRight.innerHTML = `
-                    ${languageSelectHTML}
-                    <span style="color: var(--text-primary); font-weight: 500;">${data.user.name}</span>
-                    <button class="btn btn-secondary" onclick="logout()">Logout</button>
-                `;
+                alert(data.message);
+                closeAuthModal();
                 
                 alert(data.message);
                 closeAuthModal();
@@ -2020,15 +2171,181 @@
                 return;
             }
             
-            alert(responseLang === 'km' ? 'ប្រព័ន្ធកំពុងអភិវឌ្ឍន៍' : 'Feature under development');
-            switchAuthForm('login');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Store reset token in session for next step
+                    sessionStorage.setItem('resetToken', data.resetToken);
+                    
+                    // Show reset password form
+                    document.getElementById('forgotForm').style.display = 'none';
+                    document.getElementById('resetPasswordForm').style.display = 'block';
+                    alert('Check your email or use the reset form below.');
+                } else {
+                    alert(data.error || 'Failed to send reset link');
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                alert('Failed to send reset link');
+            }
+        }
+        
+        // ===== HANDLE RESET PASSWORD =====
+        async function handleResetPassword(event) {
+            event.preventDefault();
+            
+            const newPassword = document.getElementById('resetNewPassword').value;
+            const confirmPassword = document.getElementById('resetConfirmPassword').value;
+            const token = sessionStorage.getItem('resetToken');
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
+            
+            if (!token) {
+                alert(`${responseLang === 'km' ? 'សូមស្វាគមន៍ឡើងវិញ' : 'Please go through forgot password first'}`);
+                return;
+            }
+            
+            if (!newPassword || !confirmPassword) {
+                alert(responseLang === 'km' ? 'សូមបំពេញលម្អិតឡើងវិញ' : 'Please fill in all fields');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert(responseLang === 'km' ? 'ពាក្យសម្ងាត់ត្រូវមាន ៨ តួអក្សរយ៉ាងហោចណាស់' : 'Password must be at least 8 characters');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert(responseLang === 'km' ? 'ពាក្យសម្ងាត់មិនដូចគ្នា' : 'Passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    sessionStorage.removeItem('resetToken');
+                    document.getElementById('resetPasswordForm').style.display = 'none';
+                    switchAuthForm('login');
+                } else {
+                    alert(data.error || 'Failed to reset password');
+                }
+            } catch (error) {
+                console.error('Reset password error:', error);
+                alert('Failed to reset password');
+            }
         }
     
         // ===== SOCIAL LOGIN =====
         function socialLogin(provider) {
             const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
-            alert(responseLang === 'km' ? 'ប្រព័ន្ធកំពុងអភិវឌ្ឍន៍' : 'Feature under development');
-            closeAuthModal();
+            
+            if (provider === 'google') {
+                // Initialize Google Sign-In
+                if (window.google && window.google.accounts) {
+                    window.google.accounts.id.initialize({
+                        client_id: '288817925196-gcql2voharhlbtmppnta0038btq8c7em.apps.googleusercontent.com',
+                        callback: handleGoogleLogin
+                    });
+                    window.google.accounts.id.renderButton(
+                        document.getElementById('googleSignInBtn'),
+                        { theme: 'outline', size: 'large' }
+                    );
+                    window.google.accounts.id.prompt();
+                } else {
+                    alert(responseLang === 'km' ? 'កំពុងផ្ទុក Google Sign-In...' : 'Loading Google Sign-In...');
+                    setTimeout(() => socialLogin('google'), 1000);
+                }
+            } else if (provider === 'github') {
+                // GitHub OAuth flow
+                const clientId = 'Ov23lidnwM2ui7Rq7lhj';
+                const redirectUri = encodeURIComponent(window.location.origin + '/github-callback.html');
+                const scope = encodeURIComponent('user:email');
+                const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+                window.location.href = authUrl;
+            }
+        }
+
+        // Handle Google login callback
+        function handleGoogleLogin(response) {
+            const idToken = response.credential;
+            
+            // Decode JWT to get user info
+            const base64Url = idToken.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
+            const userInfo = JSON.parse(jsonPayload);
+            
+            // Send to backend
+            fetch(`${API_BASE_URL}/api/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idToken,
+                    email: userInfo.email,
+                    name: userInfo.name,
+                    picture: userInfo.picture
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    checkLoginStatus();
+                    closeAuthModal();
+                    alert('✅ Google login successful!');
+                    showPage('profile');
+                } else {
+                    alert('❌ Google login failed: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error('Google login error:', err);
+                alert('❌ Login failed');
+            });
+        }
+
+        // Handle GitHub callback
+        function handleGitHubCallback(code) {
+            fetch(`${API_BASE_URL}/api/auth/github`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    checkLoginStatus();
+                    closeAuthModal();
+                    alert('✅ GitHub login successful!');
+                    showPage('profile');
+                } else {
+                    alert('❌ GitHub login failed: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error('GitHub login error:', err);
+                alert('❌ Login failed');
+            });
         }
     
         // ===== LOGOUT =====
@@ -2036,14 +2353,11 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
-            const navRight = document.querySelector('.nav-right');
-            const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+            document.getElementById('navProfileBtn').style.display = 'none';
+            document.getElementById('signInBtn').style.display = 'inline-block';
+            document.getElementById('getStartedBtn').style.display = 'inline-block';
             
-            navRight.innerHTML = `
-                ${languageSelectHTML}
-                <button class="btn btn-secondary" onclick="openAuthModal('login')">Sign in</button>
-                <button class="btn btn-primary" onclick="openAuthModal('signup')">Get started</button>
-            `;
+            showPage('home');
         }
     
         // ===== PAGE NAVIGATION =====
@@ -2207,9 +2521,17 @@
             `;
     
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                const token = localStorage.getItem('token');
+                
+                // Add token if user is logged in - enables auto-save to history
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                
                 const response = await fetch(`${API_BASE_URL}/api/analyze-code`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({ 
                         code, 
                         language,
@@ -2298,6 +2620,360 @@
                 }
             });
         });
+
+        // ===== PROFILE FUNCTIONS =====
+        
+        // Load profile data from backend
+        async function loadProfileData() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token) {
+                showPage('home');
+                return;
+            }
+            
+            try {
+                // Display basic info from localStorage
+                document.getElementById('profileName').textContent = user.name || 'User';
+                document.getElementById('profileEmail').textContent = user.email || '';
+                document.getElementById('profileInitial').textContent = (user.name || 'U').charAt(0).toUpperCase();
+                document.getElementById('settingsName').value = user.name || '';
+                document.getElementById('settingsEmail').value = user.email || '';
+                
+                // Fetch full profile from backend
+                const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    const userData = data.user;
+                    document.getElementById('profileSavedCodes').textContent = userData.savedCodes?.length || 0;
+                    document.getElementById('profileAnalyses').textContent = userData.analysisHistory?.length || 0;
+                    
+                    if (userData.createdAt) {
+                        const memberDate = new Date(userData.createdAt);
+                        document.getElementById('profileMemberSince').textContent = memberDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                    }
+                    
+                    loadSavedCodes(userData.savedCodes || []);
+                    loadAnalysisHistory(userData.analysisHistory || []);
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+        
+        // Upload avatar
+        function setupAvatarUpload() {
+            const avatarInput = document.getElementById('avatarUpload');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Image size must be less than 5MB');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = async function(event) {
+                        const base64 = event.target.result;
+                        const token = localStorage.getItem('token');
+                        
+                        try {
+                            const response = await fetch(`${API_BASE_URL}/api/auth/upload-avatar`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ avatar: base64 })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                alert('Profile photo uploaded successfully!');
+                                loadProfileData();
+                            } else {
+                                alert(data.error || 'Failed to upload photo');
+                            }
+                        } catch (error) {
+                            console.error('Avatar upload error:', error);
+                            alert('Failed to upload photo');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+        
+        // Call setup when page loads
+        document.addEventListener('DOMContentLoaded', setupAvatarUpload);
+        
+        // Load saved codes
+        function loadSavedCodes(savedCodes) {
+            const container = document.getElementById('savedCodesList');
+            
+            if (!savedCodes || savedCodes.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-tertiary);"><i class="fa-regular fa-bookmark" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>No saved codes yet</p></div>`;
+                return;
+            }
+            
+            let html = '';
+            savedCodes.forEach((code, index) => {
+                const date = new Date(code.createdAt).toLocaleDateString();
+                const codePreview = (code.code || '').substring(0, 100);
+                html += `
+                    <div class="feature-card" style="cursor: pointer;" onclick="viewCode(${index})">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="flex: 1;">
+                                <h4 style="font-weight: 600; margin-bottom: 0.25rem;">${code.title || 'Untitled'}</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.875rem;">${code.language || 'JavaScript'}</p>
+                            </div>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; border: none; background: transparent; color: var(--error); cursor: pointer;" onclick="event.stopPropagation(); deleteSavedCode('${code._id}')">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <p style="color: var(--text-tertiary); font-size: 0.75rem; margin-bottom: 0.5rem;">${date}</p>
+                        <pre style="background: #0f172a; color: #e2e8f0; padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; max-height: 100px; overflow: hidden; font-weight: 400;">${codePreview}...</pre>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Load analysis history
+        function loadAnalysisHistory(history) {
+            const container = document.getElementById('analysisHistoryList');
+            
+            if (!history || history.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 3rem; color: var(--text-tertiary);"><i class="fa-regular fa-clock" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>No analysis history yet</p></div>`;
+                return;
+            }
+            
+            let html = '';
+            history.forEach((item, index) => {
+                const date = new Date(item.createdAt).toLocaleString();
+                const codePreview = (item.code || '').substring(0, 100);
+                html += `
+                    <div class="feature-card" style="cursor: pointer;" onclick="viewAnalysis(${index})">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600;">${item.language || 'Code'}</span>
+                            <span style="color: var(--text-tertiary); font-size: 0.75rem;">${date}</span>
+                        </div>
+                        <pre style="background: #0f172a; color: #e2e8f0; padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; max-height: 100px; overflow: hidden; font-weight: 400;">${codePreview}...</pre>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Switch profile tabs
+        function switchProfileTab(event, tab) {
+            document.querySelectorAll('.profile-tab').forEach(t => {
+                t.style.color = 'var(--text-secondary)';
+                t.style.borderBottomColor = 'transparent';
+                t.style.fontWeight = '500';
+            });
+            
+            if (event.target) {
+                event.target.style.color = 'var(--accent)';
+                event.target.style.borderBottomColor = 'var(--accent)';
+                event.target.style.fontWeight = '600';
+            }
+            
+            document.getElementById('profileSavedTab').style.display = tab === 'saved' ? 'block' : 'none';
+            document.getElementById('profileHistoryTab').style.display = tab === 'history' ? 'block' : 'none';
+            document.getElementById('profileSettingsTab').style.display = tab === 'settings' ? 'block' : 'none';
+        }
+        
+        // Save current code
+        async function saveCurrentCode() {
+            const code = document.getElementById('code')?.value;
+            const language = document.getElementById('language')?.value;
+            const token = localStorage.getItem('token');
+            
+            if (!code) {
+                alert('Please enter some code first');
+                return;
+            }
+            
+            const title = prompt('Enter a title for this code:');
+            if (!title) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/codes/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, code, language })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Code saved successfully!');
+                    loadProfileData();
+                } else {
+                    alert(data.error || 'Failed to save code');
+                }
+            } catch (error) {
+                console.error('Error saving code:', error);
+                alert('Failed to save code');
+            }
+        }
+        
+        // Update profile name
+        async function updateName() {
+            const newName = document.getElementById('settingsName').value;
+            const token = localStorage.getItem('token');
+            
+            if (!newName) {
+                alert('Please enter a name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/update`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Name updated successfully');
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    user.name = newName;
+                    localStorage.setItem('user', JSON.stringify(user));
+                    loadProfileData();
+                } else {
+                    alert(data.error || 'Failed to update name');
+                }
+            } catch (error) {
+                console.error('Error updating name:', error);
+                alert('Failed to update name');
+            }
+        }
+        
+        // Change password
+        async function changePassword() {
+            const currentPassword = document.getElementById('settingsCurrentPassword').value;
+            const newPassword = document.getElementById('settingsNewPassword').value;
+            const confirmPassword = document.getElementById('settingsConfirmPassword').value;
+            const token = localStorage.getItem('token');
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                alert('Please fill in all password fields');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('Password must be at least 8 characters');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Password changed successfully');
+                    document.getElementById('settingsCurrentPassword').value = '';
+                    document.getElementById('settingsNewPassword').value = '';
+                    document.getElementById('settingsConfirmPassword').value = '';
+                } else {
+                    alert(data.error || 'Failed to change password. Check your current password.');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                alert('Failed to change password');
+            }
+        }
+        
+        // Delete account
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                const token = localStorage.getItem('token');
+                
+                fetch(`${API_BASE_URL}/api/auth/delete`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => res.json()).then(data => {
+                    if (data.success) {
+                        alert('Account deleted successfully');
+                        logout();
+                    } else {
+                        alert(data.error || 'Failed to delete account');
+                    }
+                }).catch(err => {
+                    console.error('Error:', err);
+                    alert('Failed to delete account');
+                });
+            }
+        }
+        
+        // View code
+        function viewCode(index) {
+            showPage('profile');
+        }
+        
+        // Delete saved code
+        function deleteSavedCode(codeId) {
+            if (confirm('Delete this saved code?')) {
+                const token = localStorage.getItem('token');
+                
+                fetch(`${API_BASE_URL}/api/codes/${codeId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => res.json()).then(data => {
+                    if (data.success) {
+                        loadProfileData();
+                    } else {
+                        alert(data.error || 'Failed to delete code');
+                    }
+                }).catch(err => console.error(err));
+            }
+        }
+        
+        // View analysis
+        function viewAnalysis(index) {
+            showPage('profile');
+        }
+        
+        // Edit profile
+        function editProfile() {
+            switchProfileTab(null, 'settings');
+        }
     </script>
+    
+    <!-- Google Sign-In Library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
