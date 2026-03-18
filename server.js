@@ -6,176 +6,170 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+// ===== MIDDLEWARE =====
+app.use(cors());                    
+app.use(express.json());            
+app.use(express.static('public'));  
 
-console.log('\n🔍 ===== GROQ DIAGNOSTICS =====');
+console.log('\n🔍 ===== KONKMENG AI SYSTEM =====');
 console.log('🔑 GROQ_API_KEY exists:', !!process.env.GROQ_API_KEY);
-console.log('🔑 GROQ_API_KEY length:', process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.length : 0);
 console.log('🔑 PORT:', PORT);
-console.log('===============================\n');
+console.log('================================\n');
 
+// ===== GROQ API CONFIGURATION =====
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// WORKING GROQ MODELS (as of March 2026)
+// Models ដែលអាចប្រើបាន 100%
 const GROQ_MODELS = {
-    // Fast models (recommended)
-    FAST: 'llama-3.1-8b-instant',        // ✅ Fastest, works well
-    BALANCED: 'llama-3.3-70b-versatile',  // ✅ Good balance
-    POWERFUL: 'mixtral-8x7b-32768',       // ✅ Powerful
-    
-    // Alternative models if above don't work
-    ALT1: 'gemma2-9b-it',                  // ✅ Google Gemma
-    ALT2: 'llama3-8b-8192',                 // ✅ Older but stable
-    ALT3: 'llama3-70b-8192'                  // ❌ May be deprecated, use as last resort
+    FAST: 'llama-3.1-8b-instant',        // លឿនបំផុត
+    BALANCED: 'llama-3.3-70b-versatile',  // គុណភាពល្អ
+    POWERFUL: 'mixtral-8x7b-32768'        // ខ្លាំង សម្រាប់កូដស្មុគស្មាញ
 };
 
-// Test endpoint to check which models work
-app.get('/api/test-groq', async (req, res) => {
-    console.log('\n🔄 Testing Groq models...');
-    
-    if (!GROQ_API_KEY) {
-        return res.status(500).json({
-            error: 'API Key missing',
-            message: 'GROQ_API_KEY is not set in .env file'
-        });
-    }
+// ===== SYSTEM PROMPTS BY LANGUAGE =====
+const getSystemPrompt = (language) => {
+    if (language === 'km') {
+        return `You are a Khmer programming teacher. Your responses must be 100% in Khmer language only.
 
-    const results = [];
+📋 **RESPONSE FORMAT (ធ្វើតាមទម្រង់នេះឲ្យបានត្រឹមត្រូវ)៖**
 
-    for (const [key, model] of Object.entries(GROQ_MODELS)) {
-        try {
-            console.log(`Testing ${key}: ${model}...`);
-            
-            const response = await axios.post(GROQ_API_URL, {
-                model: model,
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are a helpful assistant.'
-                    },
-                    {
-                        role: 'user',
-                        content: 'Say "test" in JSON format: { "status": "ok" }'
-                    }
-                ],
-                temperature: 0.1,
-                max_tokens: 50
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 10000
-            });
+📝 **កូដដែលត្រូវជួសជុល៖**
+*បន្ទាត់ទី [លេខ]: [បង្ហាញកូដដើមទាំងស្រុង]
 
-            if (response.data?.choices?.[0]) {
-                console.log(`✅ ${model} is WORKING!`);
-                results.push({
-                    model: model,
-                    status: 'working',
-                    response: response.data.choices[0].message.content
-                });
-            }
-        } catch (error) {
-            console.log(`❌ ${model} failed:`);
-            let errorDetails = '';
-            if (error.response) {
-                errorDetails = error.response.data?.error?.message || error.message;
-                console.log('Status:', error.response.status);
-                console.log('Error:', errorDetails);
-            } else {
-                errorDetails = error.message;
-                console.log('Error:', errorDetails);
-            }
-            
-            results.push({
-                model: model,
-                status: 'failed',
-                error: errorDetails
-            });
-        }
-    }
+🔧 **កំហុសដែលឃើញ៖**
+- [ពន្យល់កំហុសត្រឹម ១-២ ប្រយោគប៉ុណ្ណោះ]
+- [បើមានកំហុសច្រើន រាយជាចំណុចៗ]
 
-    res.json({
-        apiKeyPresent: !!GROQ_API_KEY,
-        apiKeyLength: GROQ_API_KEY ? GROQ_API_KEY.length : 0,
-        testResults: results,
-        recommendation: 'Use llama-3.1-8b-instant for best results'
-    });
-});
-
-// Simplified Khmer prompt (to avoid complexity)
-const getSimpleKhmerPrompt = (code, language) => {
-    return `You are a Khmer teacher. Explain this ${language} code in simple Khmer.
-
-RULES:
-- Use easy Khmer words
-- Explain line by line starting with *line X:
-- Put code in \`backticks\`
-
-Code:
-\`\`\`${language}
-${code}
+✅ **កូដដែលបានជួសជុល៖**
+\`\`\`[language]
+[កូដថ្មីដែលត្រឹមត្រូវ]
 \`\`\`
 
-Explain in Khmer:`;
+📖 **ការពន្យល់ម្តងមួយបន្ទាត់៖**
+*បន្ទាត់ទី [លេខ]: [ពន្យល់ខ្លីៗថាបន្ទាត់នេះធ្វើអ្វី]
+
+💡 **ឧទាហរណ៍បន្ថែម** (បើចាំបាច់)៖
+\`\`\`[language]
+[ឧទាហរណ៍ផ្សេងទៀត]
+\`\`\`
+
+⚠️ **សំខាន់បំផុត៖**
+1. ហាមនិយាយដដែលៗដាច់ខាត
+2. ហាមប្រើពាក្យអង់គ្លេសច្រើនពេក
+3. ហាមពន្យល់វែងឆ្ងាយជាង ៥ ប្រយោគ
+4. ត្រូវដាក់កូដក្នុង \`backticks\` ជានិច្ច
+5. ត្រូវប្រើ *បន្ទាត់ទី [លេខ]៖ សម្រាប់ពន្យល់ម្តងមួយបន្ទាត់`;
+    } else {
+        return `You are an expert programming teacher. Your responses must be 100% in English only.
+
+📋 **RESPONSE FORMAT (Follow this format strictly):**
+
+📝 **Code to Fix:**
+*Line [number]: [show original code]
+
+🔧 **Errors Found:**
+- [brief explanation in English, 1-2 sentences]
+- [list multiple errors if needed]
+
+✅ **Fixed Code:**
+\`\`\`[language]
+[corrected code]
+\`\`\`
+
+📖 **Line-by-Line Explanation:**
+*Line [number]: [brief explanation of what this line does]
+
+💡 **Additional Examples** (if needed):
+\`\`\`[language]
+[more examples]
+\`\`\`
+
+⚠️ **IMPORTANT:**
+1. No repetition at all
+2. Don't use too many technical jargon
+3. Keep explanations under 5 sentences
+4. Always wrap code in \`backticks\`
+5. Use *Line [number]: format for line-by-line explanation`;
+    }
 };
 
-// ===== MAIN ANALYSIS ENDPOINT =====
+// ===== API ENDPOINT សម្រាប់វិភាគកូដ =====
 app.post('/api/analyze-code', async (req, res) => {
     try {
-        const { code, language } = req.body;
+        const { code, language, responseLang = 'en' } = req.body;
         
-        console.log('\n📥 Request received:');
-        console.log('Language:', language);
+        console.log('\n📥 ===== REQUEST RECEIVED =====');
+        console.log('Programming Language:', language);
+        console.log('Response Language:', responseLang);
         console.log('Code length:', code?.length || 0);
 
-        // Validation
+        // === VALIDATION ===
         if (!code) {
-            return res.status(400).json({ error: 'Code is required' });
+            return res.status(400).json({ 
+                error: responseLang === 'km' ? 'សូមបញ្ចូលកូដ' : 'Please enter code',
+                details: responseLang === 'km' ? 'អ្នកមិនទាន់បានបិទភ្ជាប់កូដទេ' : 'You have not pasted any code'
+            });
         }
 
         if (!GROQ_API_KEY) {
             return res.status(500).json({ 
-                error: 'GROQ API Key not configured',
-                details: 'Please add GROQ_API_KEY to your .env file'
+                error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured',
+                details: responseLang === 'km' ? 'សូមពិនិត្យ .env របស់អ្នក' : 'Please check your .env file',
+                solution: responseLang === 'km' ? 'បន្ថែម GROQ_API_KEY=gsk_xxxx ក្នុងឯកសារ .env' : 'Add GROQ_API_KEY=gsk_xxxx to your .env file'
             });
         }
 
-        // Try models in order (from most reliable to least)
+        // === TRY MODELS IN ORDER ===
         const modelsToTry = [
-            { name: 'llama-3.1-8b-instant', type: 'FAST' },
-            { name: 'llama-3.3-70b-versatile', type: 'BALANCED' },
-            { name: 'mixtral-8x7b-32768', type: 'POWERFUL' },
-            { name: 'gemma2-9b-it', type: 'ALT1' }
+            { name: GROQ_MODELS.FAST, type: responseLang === 'km' ? 'រហ័ស' : 'Fast' },
+            { name: GROQ_MODELS.BALANCED, type: responseLang === 'km' ? 'មធ្យម' : 'Balanced' },
+            { name: GROQ_MODELS.POWERFUL, type: responseLang === 'km' ? 'ខ្លាំង' : 'Powerful' }
         ];
 
         let lastError = null;
+        let successResponse = null;
 
         for (const modelInfo of modelsToTry) {
             try {
-                console.log(`🤖 Trying ${modelInfo.name}...`);
+                console.log(`🤔 Trying ${modelInfo.name} (${modelInfo.type})...`);
 
-                const prompt = getSimpleKhmerPrompt(code, language);
+                // Create user prompt based on response language
+                const userPrompt = responseLang === 'km' 
+                    ? `ពន្យល់កូដ ${language} នេះឲ្យខ្លី និងច្បាស់ជាភាសាខ្មែរ៖
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+សូមឆ្លើយតាមទម្រង់ដែលបានកំណត់។
+សំខាន់៖ កុំនិយាយដដែលៗ កុំពន្យល់វែង ប្រើតែភាសាខ្មែរប៉ុណ្ណោះ។`
+                    : `Explain this ${language} code briefly and clearly in English:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please follow the response format strictly.
+Important: No repetition, keep explanations concise, use English only.`;
 
                 const response = await axios.post(GROQ_API_URL, {
                     model: modelInfo.name,
                     messages: [
                         {
                             role: 'system',
-                            content: 'You are a Khmer teacher. Explain code in simple Khmer.'
+                            content: getSystemPrompt(responseLang)
                         },
                         {
                             role: 'user',
-                            content: prompt
+                            content: userPrompt
                         }
                     ],
-                    temperature: 0.3,
-                    max_tokens: 2048
+                    temperature: 0.2,
+                    max_tokens: 1500,
+                    top_p: 0.85,
+                    frequency_penalty: 0.7,
+                    presence_penalty: 0.6
                 }, {
                     headers: {
                         'Authorization': `Bearer ${GROQ_API_KEY}`,
@@ -186,87 +180,90 @@ app.post('/api/analyze-code', async (req, res) => {
 
                 if (response.data?.choices?.[0]) {
                     console.log(`✅ Success with ${modelInfo.name}`);
-                    
-                    return res.json({
-                        success: true,
-                        analysis: response.data.choices[0].message.content,
-                        model: `${modelInfo.name} (${modelInfo.type})`,
-                        usage: response.data.usage
-                    });
+                    successResponse = response.data.choices[0].message.content;
+                    break;
                 }
 
             } catch (error) {
                 console.log(`❌ ${modelInfo.name} failed:`, error.message);
                 lastError = error;
-                
-                if (error.response) {
-                    console.log('Status:', error.response.status);
-                    console.log('Error details:', error.response.data?.error?.message);
-                }
-                // Continue to next model
             }
         }
 
-        // If all models failed
-        console.error('\n❌ All models failed');
-        
-        // Provide helpful error message
-        let errorMessage = 'All Groq models failed';
-        let errorDetails = lastError?.message || 'Unknown error';
-        let suggestion = '';
+        // === បើមាន Response ជោគជ័យ ផ្ញើត្រឡប់ទៅ Frontend ===
+        if (successResponse) {
+            return res.json({
+                success: true,
+                analysis: successResponse,
+                responseLanguage: responseLang,
+                status: responseLang === 'km' ? 'វិភាគរួចរាល់' : 'Analysis complete'
+            });
+        }
 
-        if (lastError?.response?.status === 401) {
-            errorDetails = 'Invalid API key';
-            suggestion = 'Please check your GROQ_API_KEY in .env file';
-        } else if (lastError?.response?.status === 429) {
-            errorDetails = 'Rate limit exceeded';
-            suggestion = 'You have exceeded Groq free tier limits. Try again later.';
-        } else if (lastError?.response?.status === 400) {
-            errorDetails = 'Bad request - model may be deprecated';
-            suggestion = 'Run /api/test-groq to see working models';
+        // === ERROR HANDLING (បើបរាជ័យទាំងអស់) ===
+        throw lastError || new Error('All models failed');
+
+    } catch (error) {
+        console.error('\n❌ ERROR:', error.message);
+        
+        const responseLang = req.body?.responseLang || 'en';
+        
+        let errorMessage = responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed';
+        let errorDetails = error.message;
+        let errorSolution = responseLang === 'km' ? 'សូមព្យាយាមម្តងទៀត' : 'Please try again';
+
+        // ពិនិត្យមើលប្រភេទ Error
+        if (error.response) {
+            const status = error.response.status;
+            
+            if (status === 401 || status === 403) {
+                errorMessage = responseLang === 'km' ? 'បញ្ហា API Key' : 'API Key issue';
+                errorDetails = responseLang === 'km' ? 'API Key របស់អ្នកមិនត្រឹមត្រូវ' : 'Your API Key is incorrect';
+                errorSolution = responseLang === 'km' ? 'សូមពិនិត្យ GROQ_API_KEY ក្នុងឯកសារ .env' : 'Please check GROQ_API_KEY in your .env file';
+            }
+            else if (status === 429) {
+                errorMessage = responseLang === 'km' ? 'ហួសកំណត់ប្រើប្រាស់' : 'Rate limit exceeded';
+                errorDetails = responseLang === 'km' ? 'អ្នកបានប្រើ API ច្រើនពេកក្នុងពេលខ្លី' : 'You have exceeded API rate limits';
+                errorSolution = responseLang === 'km' ? 'រង់ចាំ ១ នាទី រួចព្យាយាមម្តងទៀត' : 'Wait 1 minute and try again';
+            }
+            else if (status === 400) {
+                errorMessage = responseLang === 'km' ? 'សំណើមិនត្រឹមត្រូវ' : 'Invalid request';
+                errorDetails = error.response.data?.error?.message || 'Bad request';
+                errorSolution = responseLang === 'km' ? 'សូមពិនិត្យកូដដែលបានបញ្ចូល' : 'Please check your code input';
+            }
         }
 
         res.status(500).json({
             error: errorMessage,
             details: errorDetails,
-            suggestion: suggestion || 'Run /api/test-groq for diagnostics'
-        });
-
-    } catch (error) {
-        console.error('\n❌ Fatal error:', error);
-        res.status(500).json({
-            error: 'Analysis failed',
-            details: error.message,
-            suggestion: 'Check server logs'
+            solution: errorSolution
         });
     }
 });
 
-// Health check
+// ===== API ENDPOINT សម្រាប់ពិនិត្យស្ថានភាព =====
 app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'KONKMENG API is running',
-        apiKeyConfigured: !!GROQ_API_KEY,
-        endpoints: {
-            test: '/api/test-groq',
-            analyze: '/api/analyze-code',
-            health: '/api/health'
-        },
+    res.json({ 
+        status: '✅ KONKMENG is running',
+        message: 'Bilingual Code Analysis System (Khmer/English)',
+        version: '2.0 (Bilingual)',
+        apiKey: GROQ_API_KEY ? '✅ Configured' : '❌ Missing',
+        models: GROQ_MODELS,
+        languages: ['Khmer', 'English'],
         timestamp: new Date().toISOString()
     });
 });
 
+// ===== START SERVER =====
 app.listen(PORT, () => {
-    console.log('\n🚀 ==================================');
+    console.log('\n🚀 ============================================');
     console.log(`🚀 KONKMENG Server running on http://localhost:${PORT}`);
-    console.log('🚀 ==================================\n');
-    console.log('📋 AVAILABLE ENDPOINTS:');
-    console.log(`   1. Test API: http://localhost:${PORT}/api/test-groq`);
-    console.log(`   2. Analyze: POST http://localhost:${PORT}/api/analyze-code`);
-    console.log(`   3. Health: http://localhost:${PORT}/api/health\n`);
-    console.log('📋 RECOMMENDED MODELS:');
-    console.log('   - ✅ llama-3.1-8b-instant (Fastest, most reliable)');
-    console.log('   - ✅ llama-3.3-70b-versatile (Best quality)');
-    console.log('   - ✅ mixtral-8x7b-32768 (Alternative)\n');
-    console.log('⚠️  If you see errors, run /api/test-groq first\n');
+    console.log('🚀 ============================================\n');
+    console.log('📋 BILINGUAL FEATURE:');
+    console.log('   • Khmer responses (ភាសាខ្មែរ)');
+    console.log('   • English responses');
+    console.log('   • Select from dropdown in UI\n');
+    console.log('📋 Health check: http://localhost:' + PORT + '/api/health');
+    console.log('📋 Analyze: POST http://localhost:' + PORT + '/api/analyze-code');
+    console.log('\n✅ Ready! Server is waiting for requests...\n');
 });
