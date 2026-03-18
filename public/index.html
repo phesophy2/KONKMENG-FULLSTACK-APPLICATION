@@ -1810,27 +1810,58 @@
     <!-- AOS Animation Library -->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        // Initialize AOS
-        AOS.init({
-            duration: 800,
-            once: true,
-            offset: 100
-        });
-
-        // ===== NEW - Language Switcher Element =====
+        // ===== SAFE AOS INITIALIZATION =====
+        if (typeof AOS !== 'undefined') {
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 100
+            });
+            console.log('✅ AOS initialized successfully');
+        } else {
+            console.warn('⚠️ AOS not loaded - animations disabled');
+        }
+    
+        // ===== Language Switcher Element =====
         const responseLangSelect = document.getElementById('responseLanguage');
-
+    
+        // ===== API Base URL =====
+        const API_BASE_URL = 'http://localhost:3000';
+    
+        // ===== Check if user is already logged in =====
+        (function checkLoginStatus() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token && user) {
+                try {
+                    const userData = JSON.parse(user);
+                    const navRight = document.querySelector('.nav-right');
+                    const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+                    
+                    navRight.innerHTML = `
+                        ${languageSelectHTML}
+                        <span style="color: var(--text-primary); font-weight: 500;">${userData.name}</span>
+                        <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    `;
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            }
+        })();
+    
         // ===== AUTH MODAL FUNCTIONS =====
         function openAuthModal(type) {
             document.getElementById('authModal').classList.add('active');
             switchAuthForm(type);
         }
-
+    
         function closeAuthModal() {
             document.getElementById('authModal').classList.remove('active');
         }
-
+    
         function switchAuthForm(type) {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('signupForm').style.display = 'none';
@@ -1842,14 +1873,14 @@
                 document.getElementById('signupForm').style.display = 'block';
             }
         }
-
+    
         function showForgotPassword() {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('signupForm').style.display = 'none';
             document.getElementById('forgotForm').style.display = 'block';
         }
-
-        // ===== HANDLE LOGIN =====
+    
+        // ===== HANDLE LOGIN (Real Backend) =====
         async function handleLogin(event) {
             event.preventDefault();
             
@@ -1857,29 +1888,56 @@
             const password = document.getElementById('loginPassword').value;
             const loader = document.getElementById('loginLoader');
             const submitBtn = event.target.querySelector('button[type="submit"]');
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
             
             if (!email || !password) {
-                alert('Please fill in all fields');
+                alert(responseLang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill in all fields');
                 return;
             }
             
             loader.style.display = 'inline-block';
             submitBtn.disabled = true;
             
-            setTimeout(() => {
-                loader.style.display = 'none';
-                submitBtn.disabled = false;
-                alert('Demo: Login successful! (This is a simulation)');
-                closeAuthModal();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, responseLang })
+                });
                 
-                document.querySelector('.nav-right').innerHTML = `
-                    <span style="color: var(--text-primary); font-weight: 500;">${email}</span>
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                const navRight = document.querySelector('.nav-right');
+                const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+                
+                navRight.innerHTML = `
+                    ${languageSelectHTML}
+                    <span style="color: var(--text-primary); font-weight: 500;">${data.user.name}</span>
                     <button class="btn btn-secondary" onclick="logout()">Logout</button>
                 `;
-            }, 1500);
+                
+                alert(data.message);
+                closeAuthModal();
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(error.message);
+            } finally {
+                loader.style.display = 'none';
+                submitBtn.disabled = false;
+            }
         }
-
-        // ===== HANDLE SIGNUP =====
+    
+        // ===== HANDLE SIGNUP (Real Backend) =====
         async function handleSignup(event) {
             event.preventDefault();
             
@@ -1889,67 +1947,105 @@
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
             const loader = document.getElementById('signupLoader');
             const submitBtn = event.target.querySelector('button[type="submit"]');
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
             
             if (!name || !email || !password || !confirmPassword) {
-                alert('Please fill in all fields');
+                alert(responseLang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill in all fields');
                 return;
             }
             
             if (password.length < 8) {
-                document.getElementById('passwordError').textContent = 'Password must be at least 8 characters';
+                document.getElementById('passwordError').textContent = 
+                    responseLang === 'km' ? 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៨ តួអក្សរ' : 'Password must be at least 8 characters';
                 return;
             }
             
             if (password !== confirmPassword) {
-                document.getElementById('passwordError').textContent = 'Passwords do not match';
+                document.getElementById('passwordError').textContent = 
+                    responseLang === 'km' ? 'ពាក្យសម្ងាត់មិនដូចគ្នាទេ' : 'Passwords do not match';
                 return;
             }
             
             loader.style.display = 'inline-block';
             submitBtn.disabled = true;
             
-            setTimeout(() => {
-                loader.style.display = 'none';
-                submitBtn.disabled = false;
-                alert('Demo: Account created successfully! (This is a simulation)');
-                closeAuthModal();
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password, responseLang })
+                });
                 
-                document.querySelector('.nav-right').innerHTML = `
-                    <span style="color: var(--text-primary); font-weight: 500;">${email}</span>
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Signup failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                const navRight = document.querySelector('.nav-right');
+                const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+                
+                navRight.innerHTML = `
+                    ${languageSelectHTML}
+                    <span style="color: var(--text-primary); font-weight: 500;">${data.user.name}</span>
                     <button class="btn btn-secondary" onclick="logout()">Logout</button>
                 `;
-            }, 1500);
+                
+                alert(data.message);
+                closeAuthModal();
+                
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert(error.message);
+            } finally {
+                loader.style.display = 'none';
+                submitBtn.disabled = false;
+            }
         }
-
+    
         // ===== HANDLE FORGOT PASSWORD =====
         async function handleForgotPassword(event) {
             event.preventDefault();
             
             const email = document.getElementById('forgotEmail').value;
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
             
             if (!email) {
-                alert('Please enter your email');
+                alert(responseLang === 'km' ? 'សូមបញ្ចូលអ៊ីមែល' : 'Please enter your email');
                 return;
             }
             
-            alert(`Demo: Password reset link sent to ${email} (This is a simulation)`);
+            alert(responseLang === 'km' ? 'ប្រព័ន្ធកំពុងអភិវឌ្ឍន៍' : 'Feature under development');
             switchAuthForm('login');
         }
-
+    
         // ===== SOCIAL LOGIN =====
         function socialLogin(provider) {
-            alert(`Demo: ${provider} login (This is a simulation)`);
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
+            alert(responseLang === 'km' ? 'ប្រព័ន្ធកំពុងអភិវឌ្ឍន៍' : 'Feature under development');
             closeAuthModal();
         }
-
+    
         // ===== LOGOUT =====
         function logout() {
-            document.querySelector('.nav-right').innerHTML = `
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            const navRight = document.querySelector('.nav-right');
+            const languageSelectHTML = document.querySelector('.flex.items-center')?.outerHTML || '';
+            
+            navRight.innerHTML = `
+                ${languageSelectHTML}
                 <button class="btn btn-secondary" onclick="openAuthModal('login')">Sign in</button>
                 <button class="btn btn-primary" onclick="openAuthModal('signup')">Get started</button>
             `;
         }
-
+    
         // ===== PAGE NAVIGATION =====
         function showPage(pageName) {
             document.querySelectorAll('.page-section').forEach(page => {
@@ -1974,10 +2070,11 @@
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
-            // Refresh AOS
-            AOS.refresh();
+            if (typeof AOS !== 'undefined') {
+                AOS.refresh();
+            }
         }
-
+    
         // ===== DOCS NAVIGATION =====
         function showDoc(docPage) {
             const docsContent = document.getElementById('docs-content');
@@ -2064,7 +2161,7 @@
             
             docsContent.innerHTML = docs[docPage] || docs['getting-started'];
         }
-
+    
         // ===== FORMAT AI RESPONSE =====
         function formatResponse(text) {
             if (!text) return '';
@@ -2078,24 +2175,24 @@
             
             return formatted;
         }
-
-        // ===== ANALYZE CODE - MODIFIED to include responseLang =====
+    
+        // ===== ANALYZE CODE =====
         async function analyzeCode() {
             const code = document.getElementById('code').value.trim();
             const language = document.getElementById('language').value;
-            const responseLang = responseLangSelect ? responseLangSelect.value : 'en'; // NEW - get selected language
+            const responseLang = responseLangSelect ? responseLangSelect.value : 'en';
             const analyzeBtn = document.getElementById('analyzeBtn');
             const loader = document.getElementById('loader');
             const output = document.getElementById('output');
             const placeholder = document.getElementById('placeholder');
             const status = document.getElementById('status');
             const tokenInfo = document.getElementById('tokenInfo');
-
+    
             if (!code) {
-                alert(responseLang === 'km' ? 'សូមបញ្ចូលកូដ' : 'Please paste your code'); // MODIFIED
+                alert(responseLang === 'km' ? 'សូមបញ្ចូលកូដ' : 'Please paste your code');
                 return;
             }
-
+    
             analyzeBtn.disabled = true;
             loader.style.display = 'inline-block';
             status.innerHTML = `<span class="status-dot active" style="background: var(--warning); animation: pulse 1s infinite;"></span><span class="text-xs" style="color: var(--warning);">${responseLang === 'km' ? 'កំពុងវិភាគ...' : 'Analyzing...'}</span>`;
@@ -2108,31 +2205,31 @@
                     <span style="margin-left: 1rem; color: var(--text-secondary);">${responseLang === 'km' ? 'កំពុងដំណើរការ...' : 'Processing...'}</span>
                 </div>
             `;
-
+    
             try {
-                const response = await fetch('/api/analyze-code', {
+                const response = await fetch(`${API_BASE_URL}/api/analyze-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         code, 
                         language,
-                        responseLang // NEW - send language preference
+                        responseLang
                     })
                 });
-
+    
                 const data = await response.json();
-
+    
                 if (!response.ok) {
                     throw new Error(data.error || data.details || 'Analysis failed');
                 }
-
+    
                 output.innerHTML = formatResponse(data.analysis) || '<p>No analysis returned</p>';
                 status.innerHTML = `<span class="status-dot active" style="background: var(--success);"></span><span class="text-xs" style="color: var(--success);">${responseLang === 'km' ? 'វិភាគរួចរាល់' : 'Complete'}</span>`;
                 
                 if (data.usage) {
                     tokenInfo.textContent = `${data.usage.total_tokens} tokens`;
                 }
-
+    
             } catch (error) {
                 console.error('Analysis error:', error);
                 output.innerHTML = `
@@ -2148,7 +2245,7 @@
                 loader.style.display = 'none';
             }
         }
-
+    
         // ===== EVENT LISTENERS =====
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('authModal').addEventListener('click', function(e) {
@@ -2156,7 +2253,7 @@
                     closeAuthModal();
                 }
             });
-
+    
             const analyzeBtn = document.getElementById('analyzeBtn');
             if (analyzeBtn) {
                 analyzeBtn.addEventListener('click', analyzeCode);
@@ -2172,25 +2269,25 @@
                     document.getElementById('status').innerHTML = `<span class="status-dot active" style="background: var(--success);"></span><span class="text-xs" style="color: var(--text-secondary);">${responseLang === 'km' ? 'រួចរាល់' : 'Ready'}</span>`;
                 });
             }
-
+    
             const exampleBtn = document.getElementById('exampleBtn');
             if (exampleBtn) {
                 exampleBtn.addEventListener('click', () => {
                     document.getElementById('code').value = 
-`// Fibonacci sequence
-function fibonacci(n) {
-    if (n <= 1) return n;
-    return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
-// Test
-console.log(fibonacci(10)); // 55
-
-// Bug: This will cause stack overflow
-console.log(fibonacci(100));`;
+    `// Fibonacci sequence
+    function fibonacci(n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+    
+    // Test
+    console.log(fibonacci(10)); // 55
+    
+    // Bug: This will cause stack overflow
+    console.log(fibonacci(100));`;
                 });
             }
-
+    
             document.addEventListener('keydown', (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     analyzeCode();
