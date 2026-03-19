@@ -1420,11 +1420,6 @@
             const icon = document.getElementById('analyze-icon');
             const t = translations[currentLang];
             
-            console.log('🔍 Analyze Code Called');
-            console.log('Code:', code);
-            console.log('Language:', language);
-            console.log('Current Lang:', currentLang);
-            
             if (!code) return alert(currentLang === 'km' ? 'សូមបញ្ចូលកូដ' : 'Please paste your code');
             
             btn.disabled = true;
@@ -1441,10 +1436,7 @@
                     headers['Authorization'] = `Bearer ${token}`;
                 }
                 
-                const apiUrl = `${getApiBaseUrl()}/api/analyze-code`;
-                console.log('🚀 Calling API:', apiUrl);
-                
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`${getApiBaseUrl()}/api/analyze-code`, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
@@ -1454,15 +1446,12 @@
                     })
                 });
                 
-                console.log('📡 Response status:', response.status);
                 const data = await response.json();
-                console.log('📋 Response data:', data);
                 
                 if (!response.ok) {
                     throw new Error(data.error || data.details || 'Analysis failed');
                 }
                 
-                console.log('✅ Analysis received:', data.analysis);
                 output.innerHTML = data.analysis || '<p>No analysis returned</p>';
                 document.getElementById('copy-btn').classList.remove('hidden');
                 status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-600">${t['tool.status_complete']}</span>`;
@@ -1473,7 +1462,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Analysis error:', error);
+                console.error('Analysis error:', error);
                 output.innerHTML = `
                     <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
                         <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
