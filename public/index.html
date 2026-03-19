@@ -994,7 +994,16 @@
             document.getElementById('lang-select').value = currentLang;
             document.getElementById('currentYear').textContent = new Date().getFullYear();
             updateUI();
+            checkAuthStatus(); // Check authentication status
             lucide.createIcons();
+        }
+
+        // Get API base URL based on environment
+        function getApiBaseUrl() {
+            // Check if we're in development (localhost) or production
+            return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:3000' 
+                : 'https://konkmeng.onrender.com';
         }
 
         function updateUI() {
@@ -1206,19 +1215,165 @@
             openSignInModal();
         };
 
-        window.handleSignIn = (event) => {
+        window.handleSignIn = async (event) => {
             event.preventDefault();
-            // Mock sign in - in real app, this would call your API
-            alert('Sign in functionality would be implemented here with your backend API');
-            closeSignInModal();
+            const email = event.target.querySelector('input[type="email"]').value;
+            const password = event.target.querySelector('input[type="password"]').value;
+            
+            if (!email || !password) {
+                alert(currentLang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, responseLang: currentLang })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Update UI to show logged in state
+                updateAuthUI(true);
+                
+                alert(data.message || 'Login successful!');
+                closeSignInModal();
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(error.message || (currentLang === 'km' ? 'ការចូលប្រើបរាណ៍បរាជ័យ' : 'Login failed'));
+            }
         };
 
-        window.handleSignUp = (event) => {
+        window.handleSignUp = async (event) => {
             event.preventDefault();
-            // Mock sign up - in real app, this would call your API
-            alert('Sign up functionality would be implemented here with your backend API');
-            closeSignUpModal();
+            const name = event.target.querySelector('input[type="text"]').value;
+            const email = event.target.querySelector('input[type="email"]').value;
+            const password = event.target.querySelector('input[type="password"]').value;
+            
+            if (!name || !email || !password) {
+                alert(currentLang === 'km' ? 'សូមបំពេញព័ត៌មានទាំងអស់' : 'Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password, responseLang: currentLang })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+                
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Update UI to show logged in state
+                updateAuthUI(true);
+                
+                alert(data.message || 'Registration successful!');
+                closeSignUpModal();
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert(error.message || (currentLang === 'km' ? 'ការចុះឈ្មោះបរាជ័យ' : 'Registration failed'));
+            }
         };
+
+        // Update authentication UI based on login state
+        function updateAuthUI(isLoggedIn) {
+            const authNav = document.getElementById('auth-nav');
+            const mobileAuthNav = document.getElementById('mobile-auth-nav');
+            
+            if (isLoggedIn) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                
+                // Desktop auth nav
+                authNav.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-semibold text-indigo-600">${user.name ? user.name[0].toUpperCase() : 'U'}</span>
+                            </div>
+                            <span class="text-sm font-medium text-slate-700">${user.name || 'User'}</span>
+                        </div>
+                        <button onclick="handleLogout()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                `;
+                
+                // Mobile auth nav
+                mobileAuthNav.innerHTML = `
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-semibold text-indigo-600">${user.name ? user.name[0].toUpperCase() : 'U'}</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-slate-900">${user.name || 'User'}</div>
+                            <div class="text-xs text-slate-500">${user.email || ''}</div>
+                        </div>
+                        <button onclick="handleLogout(); toggleMobileMenu();" class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                            Logout
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Show sign in/get started buttons
+                authNav.innerHTML = `
+                    <button onclick="openSignInModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                        Sign In
+                    </button>
+                    <button onclick="openSignUpModal()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors">
+                        Get Started
+                    </button>
+                `;
+                
+                mobileAuthNav.innerHTML = `
+                    <button onclick="openSignInModal(); toggleMobileMenu()" class="w-full px-4 py-3 text-left text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-xl transition-colors">
+                        Sign In
+                    </button>
+                    <button onclick="openSignUpModal(); toggleMobileMenu()" class="w-full px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+                        Get Started
+                    </button>
+                `;
+            }
+            
+            lucide.createIcons();
+        }
+
+        window.handleLogout = () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            updateAuthUI(false);
+            navigateTo('home');
+        };
+
+        // Check login status on page load
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                updateAuthUI(true);
+            } else {
+                updateAuthUI(false);
+            }
+        }
 
         // ===== TOOL LOGIC =====
         window.loadExample = () => {
