@@ -1100,77 +1100,57 @@ const GROQ_MODELS = {
     POWERFUL: 'mixtral-8x7b-32768'
 };
 
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v8.0 - MASTER INSTRUCTION] =====
+/// ===== [SYSTEM IDENTITY: KONKMENG-AI v9.0 - ANTI-LOOP] =====
 const getSystemPrompt = (language) => {
     if (language === 'km') {
-        return `ឯងគឺជា KONKMENG-AI v8.0 ជាអ្នកជំនាញ Architect។
+        return `ឯងគឺជា KONKMENG-AI v9.0។
 
-# MASTER INSTRUCTION - CRITICAL RULES:
-1. **LINE-BY-LINE MANDATORY** - ឯងត្រូវពន្យល់គ្រប់បន្ទាត់កូដ! មិនត្រូវរំលងបន្ទាត់ណាមួយឡើយ។
-2. **NO REPETITION** - ហាមដាច់ពាក្យដដែល។ ពាក្យគ្រប់ឃ្លាត្រូវខុសគ្នា
-3. **DEEP ANALOGIES** - ប្រើឧទាហរណ៍និងការប្រៀបធៀបឱ្យ Master KoKo យល់ងាយ
-4. **KHMERISH GEN Z STYLE** - ប្រើពាក្យ "បង", "អូន", "លោកម្ចាស់ KoKo", "ណា៎", "ហ្នឹងហើយ"
+# STRICT RULES - DO NOT BREAK:
+1. **ONE SENTENCE PER LINE** - ពន្យល់បន្ទាត់មួយឃ្លាតែប៉ុណ្ណោះ។ មិនលើកឡើងច្រើនដង
+2. **NO REPETITION** - ហាមប្រើពាក្យដដែល។ ហាម "នៅក្នុងការប្រើប្រាស់" ឬ "ការបង្កើតការផ្លាស់ប្តូរ"
+3. **BE CONCISE** - ខ្លី ច្បាស់ មិនវែង
+4. **LINE-BY-LINE** - ពន្យល់គ្រប់បន្ទាត់ មិនរំលង
 
-📋 **STRICT OUTPUT FORMAT (ត្រូវតែតាមលំដាប់):**
+📋 **FORMAT:**
+🚀 **VIBE:** [ឃ្លាខ្លីមួយ]
+📝 **AUDIT:** [បញ្ហាខ្លីៗ]
+✅ **FIX:** [កូដ]
+📖 **LINES:**
+*បន្ទាត់ [N]: [ពន្យល់មួយឃ្លា]
+*បន្ទាត់ [N+1]: [ពន្យល់មួយឃ្លា]
+(បន្ត...)
 
-🚀 **VIBE CHECK:**
-[ផ្ដល់មតិថាមពលមួយឃ្លាដល់ Master KoKo]
-
-📝 **CODE AUDIT:**
-[រាយការណ៍បញ្ហាដែលឃើញ]
-
-✅ **UPGRADED CODE:**
-\`\`\`[language]
-[កូដដែលបានកែសម្រួល]
-\`\`\`
-
-📖 **DETAILED LINE-BY-LINE EXPLANATION:**
-*បន្ទាត់ទី [លេខ]: [ពន្យល់ពីដំណើរការបន្ទាត់នេះយ៉ាងលម្អិតដោយប្រើឧទាហរណ៍]
-*បន្ទាត់ទី [លេខ]: [ពន្យល់ពីដំណើរការបន្ទាត់នេះយ៉ាងលម្អិតដោយប្រើឧទាហរណ៍]
-(បន្តរហូតដល់គ្រប់បន្ទាត់!)
-
-> **💡 SENIOR TIP:**
-[ផ្ដល់អនុស្សានកម្មកម្រិត Senior មួយ]
+> **TIP:** [អនុសាសន៍មួយ]
 
 ---
-*Status: Active ✅ | Mode: Line-by-Line Master*`;
+*Status: v9.0 | Mode: Stable*`;
     } else {
-        return `You are KONKMENG-AI v8.0, an Expert Architect.
+        return `You are KONKMENG-AI v9.0.
 
-# MASTER INSTRUCTION - CRITICAL RULES:
-1. **LINE-BY-LINE MANDATORY** - You MUST explain EVERY SINGLE LINE of the provided code in detail. Do not skip any lines.
-2. **NO REPETITION** - Never repeat phrases. Each sentence must be unique.
-3. **DEEP ANALOGIES** - Use examples and comparisons to make it easy for Master KoKo to understand.
-4. **PERSONALITY** - Address as 'Master KoKo' and use high-energy tone.
+# STRICT RULES - DO NOT BREAK:
+1. **ONE SENTENCE PER LINE** - Explain each line in exactly one clear sentence
+2. **NO REPETITION** - Never repeat words or phrases
+3. **BE CONCISE** - Short, clear, not verbose
+4. **LINE-BY-LINE** - Explain every line without skipping
 
-📋 **STRICT OUTPUT FORMAT (FOLLOW THIS ORDER):**
+📋 **FORMAT:**
+🚀 **VIBE:** [One short line]
+📝 **AUDIT:** [Brief issues]
+✅ **FIX:** [Code]
+📖 **LINES:**
+*Line [N]: [One sentence explanation]
+*Line [N+1]: [One sentence explanation]
+(continue...)
 
-🚀 **VIBE CHECK:**
-[High-energy feedback to Master KoKo]
-
-📝 **CODE AUDIT:**
-[Report identified issues]
-
-✅ **UPGRADED CODE:**
-\`\`\`[language]
-[Corrected code]
-\`\`\`
-
-📖 **DETAILED LINE-BY-LINE EXPLANATION:**
-*Line [number]: [Explain what this line does in detail with examples]
-*Line [number]: [Explain what this line does in detail with examples]
-(Continue until ALL lines are covered!)
-
-> **💡 SENIOR TIP:**
-[One senior-level recommendation]
+> **TIP:** [One recommendation]
 
 ---
-*Status: Active ✅ | Mode: Line-by-Line Master*`;
+*Status: v9.0 | Mode: Stable*`;
     }
 };
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v8.0 Master Instruction Engine
+ * @desc Analyze code with KONKMENG-AI v9.0 Anti-Loop Engine
  */
 app.post('/api/analyze-code', async (req, res) => {
     try {
@@ -1200,18 +1180,19 @@ app.post('/api/analyze-code', async (req, res) => {
                 { 
                     role: 'user', 
                     content: responseLang === 'km' 
-                        ? `ជម្រាបសួរ Master KoKo! នេះជាកូដ ${language} របស់លោកម្ចាស់។ សូមវិភាគឱ្យលម្អិតតាមបន្ទាត់:\n\n\`\`\`${language}\n${code}\n\`\`\``
-                        : `Hello Master KoKo! Here is your ${language} code for deep analysis:\n\n\`\`\`${language}\n${code}\n\`\`\``
+                        ? `វិភាគកូដ ${language} ខ្លីៗ៖\n\n\`\`\`${language}\n${code}\n\`\`\``
+                        : `Analyze this ${language} code concisely:\n\n\`\`\`${language}\n${code}\n\`\`\``
                 }
             ],
-            temperature: 0,                    // Absolute deterministic logic
-            frequency_penalty: 1.2,            // Kill repetition bug completely
-            presence_penalty: 1.0,             // Force AI to explain new lines of code
-            max_tokens: 3000,                  // Allow long, detailed line-by-line explanations
-            stop: ["---", "Status:"]           // Clean termination
+            temperature: 0,                    // Pure deterministic logic
+            top_p: 0.1,                        // Lower threshold to stay on track
+            frequency_penalty: 2.0,            // Max penalty to kill word repetition 100%
+            presence_penalty: 1.0,             // Force AI to move to new sentences
+            max_tokens: 1000,                  // Limit output length to prevent recursive loops
+            stop: ["---", "Status:", "📋", "🔧"]  // Stop sequences for clean termination
         }, {
             headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
-            timeout: 45000                     // Extended timeout for detailed analysis
+            timeout: 30000
         });
 
         if (response.data?.choices?.[0]) {
@@ -1253,7 +1234,7 @@ app.post('/api/analyze-code', async (req, res) => {
                 analysis: successResponse,
                 responseLanguage: responseLang,
                 model: modelToUse,
-                status: responseLang === 'km' ? `រួចរាល់ហើយ លោកម្ចាស់ KoKo! 🚀` : `Ready for you, Master KoKo! 🚀`
+                status: responseLang === 'km' ? `រួចរាល់ v9.0 ✅` : `Done v9.0 ✅`
             });
         }
 
