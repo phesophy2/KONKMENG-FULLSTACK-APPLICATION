@@ -1128,6 +1128,7 @@
 
         window.analyzeCodeFullscreen = async () => {
             const code = document.getElementById('fullscreenCode').value.trim();
+            const language = document.getElementById('fullscreenLanguage').value;
             const output = document.getElementById('fullscreenOutput');
             const status = document.getElementById('fullscreenStatus');
             const btn = document.getElementById('fullscreenAnalyzeBtn');
@@ -1141,22 +1142,48 @@
             output.innerHTML = `<div class="h-full flex items-center justify-center"><div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>`;
             
             try {
-                // Mock response for demo - in production, this should call your backend API
-                await new Promise(r => setTimeout(r, 1500));
+                const headers = { 'Content-Type': 'application/json' };
+                const token = localStorage.getItem('token');
                 
-                // Generate a more realistic analysis based on the code content
-                let mock;
-                if (currentLang === 'km') {
-                    mock = `# របាយការណ៍វិភាគកូដ\n## សេចក្តីសង្ខេប\nកូដនេះត្រូវបានវិភាគដោយជោគជ័យ ហើយមានរចនាសម្ព័ន្ធដែលអាចអានបាន។\n\n## ការពន្យល់តាមបន្ទាប់\nកូដនេះបង្ហាញពី:\n- **ការកំណត់អថេរ**: ការប្រើប្រាស់អថេរដែលមានប្រយោគប្រយោគនិងងាយយល់\n- **ហិរញ្ញប្បទាន**: ការបង្កើតអនុគមន៍ដែលអាចប្រើប្រាស់ឡើងវិញ\n- **តក្កវិជ្ជា**: ការអនុវត្តតក្កវិជ្ជាដ៏សាមញ្ញ\n- **លទ្ធផល**: ការបង្ហាញលទ្ធផលដែលទាញយក\n\n## ការអនុវត្តនិងសុវត្ថិភាព\n- **ប្រសិទ្ធិ**: កូដដំណើរការយ៉ាងល្អនិងមានប្រសិទ្ធិភាព\n- **សុវត្ថិភាព**: គ្មានបញ្ហាសុវត្ថិភាពដែលប្រសើរឡើង\n- **អង្កតធម្មតា**: មិនមានបញ្ហាអង្កតធម្មតា\n\n## អនុស្សានកម្មការកែលម្អ\n- **ការគ្រប់គ្រងកំហុស**: បន្ថែមការគ្រប់គ្រងកំហុសសម្រាប់ករណីពិសេស\n- **មតិយោបល់**: បន្ថែមមតិយោបល់ដើម្បីពន្យល់អំពីការងាររបស់កូដ\n- **ការធ្វើឱ្យប្រសើរ**: អាចធ្វើឱ្យការអនុវត្តលឿនជាងមុន\n- **ឯកសារ្យ**: បន្ថែមឯកសារ្យសម្រាប់អ្នកប្រើប្រាស់ផ្សេងទៀត`;
-                } else {
-                    mock = `# Code Analysis Report\n## Summary\nThe code has been successfully analyzed and demonstrates good programming practices with clear structure and functionality.\n\n## Line-by-Line Explanation\nThe code shows:\n- **Variable Declaration**: Proper use of meaningful variable names\n- **Function Definition**: Well-structured functions with clear purpose\n- **Logic Implementation**: Clean and understandable logic flow\n- **Output Handling**: Proper display of results\n\n## Performance & Security\n- **Efficiency**: Code runs efficiently with optimal time complexity\n- **Security**: No obvious security vulnerabilities detected\n- **Memory Usage**: Appropriate memory management\n- **Edge Cases**: Handles basic edge cases appropriately\n\n## Recommendations for Improvement\n- **Error Handling**: Add comprehensive error handling for edge cases\n- **Documentation**: Include inline comments for better maintainability\n- **Validation**: Add input validation for robustness\n- **Optimization**: Consider performance optimizations for large datasets\n- **Testing**: Add unit tests to ensure reliability\n- **Code Style**: Follow consistent coding standards throughout`;
+                // Add token if user is logged in - enables auto-save to history
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
                 
-                output.innerHTML = `<div class="prose prose-invert max-w-none animate-fade-in">${marked.parse(mock)}</div>`;
+                const response = await fetch(`${getApiBaseUrl()}/api/analyze-code`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        code,
+                        language,
+                        responseLang: currentLang
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || data.details || 'Analysis failed');
+                }
+                
+                output.innerHTML = data.analysis || '<p>No analysis returned</p>';
                 document.getElementById('fullscreen-copy-btn').classList.remove('hidden');
                 status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-400">Complete</span>`;
+                
+                // Show token usage if available
+                if (data.usage) {
+                    console.log(`Tokens used: ${data.usage.total_tokens}`);
+                }
+                
             } catch (error) {
-                output.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                console.error('Analysis error:', error);
+                output.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
+                        <p class="text-red-700 font-medium">${error.message}</p>
+                        <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
+                    </div>
+                `;
                 status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-400">Error</span>`;
             } finally {
                 btn.disabled = false;
@@ -1386,6 +1413,7 @@
 
         window.analyzeCode = async () => {
             const code = document.getElementById('code').value.trim();
+            const language = document.getElementById('language').value;
             const output = document.getElementById('output');
             const status = document.getElementById('status');
             const btn = document.getElementById('analyzeBtn');
@@ -1400,22 +1428,48 @@
             output.innerHTML = `<div class="h-full flex items-center justify-center"><div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>`;
             
             try {
-                // Mock response for demo - in production, this should call your backend API
-                await new Promise(r => setTimeout(r, 1500));
+                const headers = { 'Content-Type': 'application/json' };
+                const token = localStorage.getItem('token');
                 
-                // Generate a more realistic analysis based on the code content
-                let mock;
-                if (currentLang === 'km') {
-                    mock = `# របាយការណ៍វិភាគកូដ\n## សេចក្តីសង្ខេប\nកូដនេះត្រូវបានវិភាគដោយជោគជ័យ ហើយមានរចនាសម្ព័ន្ធដែលអាចអានបាន។\n\n## ការពន្យល់តាមបន្ទាប់\nកូដនេះបង្ហាញពី:\n- **ការកំណត់អថេរ**: ការប្រើប្រាស់អថេរដែលមានប្រយោគប្រយោគនិងងាយយល់\n- **ហិរញ្ញប្បទាន**: ការបង្កើតអនុគមន៍ដែលអាចប្រើប្រាស់ឡើងវិញ\n- **តក្កវិជ្ជា**: ការអនុវត្តតក្កវិជ្ជាដ៏សាមញ្ញ\n- **លទ្ធផល**: ការបង្ហាញលទ្ធផលដែលទាញយក\n\n## ការអនុវត្តនិងសុវត្ថិភាព\n- **ប្រសិទ្ធិ**: កូដដំណើរការយ៉ាងល្អនិងមានប្រសិទ្ធិភាព\n- **សុវត្ថិភាព**: គ្មានបញ្ហាសុវត្ថិភាពដែលប្រសើរឡើង\n- **អង្កតធម្មតា**: មិនមានបញ្ហាអង្កតធម្មតា\n\n## អនុស្សានកម្មការកែលម្អ\n- **ការគ្រប់គ្រងកំហុស**: បន្ថែមការគ្រប់គ្រងកំហុសសម្រាប់ករណីពិសេស\n- **មតិយោបល់**: បន្ថែមមតិយោបល់ដើម្បីពន្យល់អំពីការងាររបស់កូដ\n- **ការធ្វើឱ្យប្រសើរ**: អាចធ្វើឱ្យការអនុវត្តលឿនជាងមុន\n- **ឯកសារ្យ**: បន្ថែមឯកសារ្យសម្រាប់អ្នកប្រើប្រាស់ផ្សេងទៀត`;
-                } else {
-                    mock = `# Code Analysis Report\n## Summary\nThe code has been successfully analyzed and demonstrates good programming practices with clear structure and functionality.\n\n## Line-by-Line Explanation\nThe code shows:\n- **Variable Declaration**: Proper use of meaningful variable names\n- **Function Definition**: Well-structured functions with clear purpose\n- **Logic Implementation**: Clean and understandable logic flow\n- **Output Handling**: Proper display of results\n\n## Performance & Security\n- **Efficiency**: Code runs efficiently with optimal time complexity\n- **Security**: No obvious security vulnerabilities detected\n- **Memory Usage**: Appropriate memory management\n- **Edge Cases**: Handles basic edge cases appropriately\n\n## Recommendations for Improvement\n- **Error Handling**: Add comprehensive error handling for edge cases\n- **Documentation**: Include inline comments for better maintainability\n- **Validation**: Add input validation for robustness\n- **Optimization**: Consider performance optimizations for large datasets\n- **Testing**: Add unit tests to ensure reliability\n- **Code Style**: Follow consistent coding standards throughout`;
+                // Add token if user is logged in - enables auto-save to history
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
                 
-                output.innerHTML = `<div class="prose animate-fade-in">${marked.parse(mock)}</div>`;
+                const response = await fetch(`${getApiBaseUrl()}/api/analyze-code`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        code,
+                        language,
+                        responseLang: currentLang
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || data.details || 'Analysis failed');
+                }
+                
+                output.innerHTML = data.analysis || '<p>No analysis returned</p>';
                 document.getElementById('copy-btn').classList.remove('hidden');
                 status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-600">${t['tool.status_complete']}</span>`;
+                
+                // Show token usage if available
+                if (data.usage) {
+                    console.log(`Tokens used: ${data.usage.total_tokens}`);
+                }
+                
             } catch (error) {
-                output.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+                console.error('Analysis error:', error);
+                output.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
+                        <p class="text-red-700 font-medium">${error.message}</p>
+                        <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
+                    </div>
+                `;
                 status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-600">${t['tool.status_error']}</span>`;
             } finally {
                 btn.disabled = false;
