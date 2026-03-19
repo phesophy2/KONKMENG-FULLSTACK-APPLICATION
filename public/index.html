@@ -1980,7 +1980,7 @@
         const responseLangSelect = document.getElementById('responseLanguage');
     
         // ===== API Base URL =====
-        const API_BASE_URL = 'http://localhost:3000';
+        const API_BASE_URL = 'https://konkmeng.onrender.com';
     
         // ===== Check if user is already logged in =====
         function checkLoginStatus() {
@@ -2060,14 +2060,20 @@
                 const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ email, password, responseLang })
                 });
                 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
-                if (!response.ok || !data.success) {
+                if (!data.success) {
                     throw new Error(data.error || 'Login failed');
                 }
                 
@@ -2083,7 +2089,15 @@
                 
             } catch (error) {
                 console.error('Login error:', error);
-                alert(error.message);
+                
+                let errorMessage = error.message;
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = responseLang === 'km' 
+                        ? 'មិនអាចតភ្ជាប់ទៅម៉ាស៊ីនមេ។ សូមព្យាយាមម្តងទៀត។'
+                        : 'Cannot connect to server. Please try again.';
+                }
+                
+                alert(errorMessage);
             } finally {
                 loader.style.display = 'none';
                 submitBtn.disabled = false;
@@ -2126,14 +2140,20 @@
                 const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ name, email, password, responseLang })
                 });
                 
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
                 
-                if (!response.ok || !data.success) {
+                if (!data.success) {
                     throw new Error(data.error || 'Signup failed');
                 }
                 
@@ -2147,12 +2167,17 @@
                 alert(data.message);
                 closeAuthModal();
                 
-                alert(data.message);
-                closeAuthModal();
-                
             } catch (error) {
                 console.error('Signup error:', error);
-                alert(error.message);
+                
+                let errorMessage = error.message;
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = responseLang === 'km' 
+                        ? 'មិនអាចតភ្ជាប់ទៅម៉ាស៊ីនមេ។ សូមព្យាយាមម្តងទៀត។'
+                        : 'Cannot connect to server. Please try again.';
+                }
+                
+                alert(errorMessage);
             } finally {
                 loader.style.display = 'none';
                 submitBtn.disabled = false;
