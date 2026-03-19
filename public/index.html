@@ -42,6 +42,19 @@
         .prose hr { @apply border-slate-200 my-10; }
         .prose strong { @apply font-semibold text-slate-900; }
 
+        /* Dark theme prose for fullscreen IDE */
+        .prose-invert h1 { @apply text-3xl font-extrabold text-slate-100 mb-6 mt-8 pb-2 border-b border-slate-700; }
+        .prose-invert h2 { @apply text-2xl font-bold text-slate-200 mb-4 mt-8 flex items-center gap-2; }
+        .prose-invert h3 { @apply text-xl font-bold text-slate-200 mb-3 mt-6; }
+        .prose-invert p { @apply text-slate-300 leading-relaxed mb-5 text-base; }
+        .prose-invert ul { @apply list-disc list-outside ml-6 space-y-3 mb-6 text-slate-300; }
+        .prose-invert ol { @apply list-decimal list-outside ml-6 space-y-3 mb-6 text-slate-300; }
+        .prose-invert code { @apply bg-slate-800 text-indigo-400 px-2 py-0.5 rounded-md font-mono text-sm font-medium; }
+        .prose-invert pre { @apply bg-slate-800 text-slate-100 p-5 rounded-2xl overflow-x-auto mb-8 font-mono text-sm shadow-xl border border-slate-700; }
+        .prose-invert blockquote { @apply border-l-4 border-indigo-400 pl-6 italic text-slate-300 mb-6 bg-slate-800/30 py-4 rounded-r-2xl; }
+        .prose-invert hr { @apply border-slate-700 my-10; }
+        .prose-invert strong { @apply font-semibold text-slate-100; }
+
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
@@ -226,6 +239,9 @@
                                 </button>
                                 <button onclick="clearCode()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="toggleFullscreen()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors">
+                                    <i data-lucide="maximize" class="w-4 h-4"></i>
                                 </button>
                             </div>
                         </div>
@@ -711,6 +727,88 @@
         </div>
     </footer>
 
+    <!-- Fullscreen IDE Modal -->
+    <div id="fullscreenIDE" class="fixed inset-0 z-50 hidden bg-slate-900">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="code-2" class="w-5 h-5 text-indigo-400"></i>
+                        <span class="text-white font-semibold">KONKMENG IDE</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="fullscreenLanguage" class="bg-slate-700 text-white text-sm px-3 py-1.5 rounded-lg border border-slate-600 outline-none focus:border-indigo-500">
+                            <option value="JavaScript">JavaScript</option>
+                            <option value="Python">Python</option>
+                            <option value="TypeScript">TypeScript</option>
+                            <option value="Java">Java</option>
+                            <option value="C++">C++</option>
+                        </select>
+                        <button onclick="loadExampleFullscreen()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            Example
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="fullscreenAnalyzeBtn" onclick="analyzeCodeFullscreen()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4" id="fullscreen-analyze-icon"></i>
+                        Analyze
+                    </button>
+                    <button onclick="toggleFullscreen()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+                        <i data-lucide="minimize" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Code Editor Panel -->
+                <div class="w-1/2 flex flex-col border-r border-slate-700">
+                    <div class="bg-slate-800 px-4 py-2 border-b border-slate-700">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300 text-sm font-medium">Code Editor</span>
+                            <button onclick="clearCodeFullscreen()" class="text-slate-400 hover:text-slate-200 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <textarea id="fullscreenCode" class="flex-1 w-full p-4 font-mono text-sm bg-slate-900 text-slate-100 resize-none outline-none" placeholder="// Paste your code here..."></textarea>
+                </div>
+                
+                <!-- AI Response Panel -->
+                <div class="w-1/2 flex flex-col">
+                    <div class="bg-slate-800 px-4 py-2 border-b border-slate-700">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="bot" class="w-4 h-4 text-indigo-400"></i>
+                                <span class="text-slate-300 text-sm font-medium">AI Response</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="copyAnalysisFullscreen()" id="fullscreen-copy-btn" class="hidden px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-colors flex items-center gap-1">
+                                    <i data-lucide="copy" class="w-3 h-3"></i>
+                                    Copy
+                                </button>
+                                <div id="fullscreenStatus" class="flex items-center gap-1.5">
+                                    <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                    <span class="text-xs text-emerald-400">Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="fullscreenOutput" class="flex-1 overflow-y-auto p-4">
+                        <div id="fullscreenPlaceholder" class="h-full flex flex-col items-center justify-center text-slate-500">
+                            <i data-lucide="message-square" class="w-16 h-16 mb-4 opacity-50"></i>
+                            <p class="text-lg mb-2">Your AI analysis will appear here</p>
+                            <p class="text-sm opacity-70">Paste code and click Analyze to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sign In Modal -->
     <div id="signInModal" class="fixed inset-0 z-50 hidden">
         <div class="modal-backdrop absolute inset-0" onclick="closeSignInModal()"></div>
@@ -951,6 +1049,130 @@
             setTimeout(() => {
                 document.getElementById('tool').scrollIntoView({ behavior: 'smooth' });
             }, 100);
+        };
+
+        // ===== FULLSCREEN IDE FUNCTIONS =====
+        window.toggleFullscreen = () => {
+            const fullscreenIDE = document.getElementById('fullscreenIDE');
+            const code = document.getElementById('code').value;
+            const output = document.getElementById('output').innerHTML;
+            
+            if (fullscreenIDE.classList.contains('hidden')) {
+                // Enter fullscreen
+                fullscreenIDE.classList.remove('hidden');
+                document.getElementById('fullscreenCode').value = code;
+                document.getElementById('fullscreenOutput').innerHTML = output;
+                document.getElementById('fullscreenLanguage').value = document.getElementById('language').value;
+                document.body.style.overflow = 'hidden';
+                
+                // Sync copy button visibility
+                const copyBtnVisible = !document.getElementById('copy-btn').classList.contains('hidden');
+                if (copyBtnVisible) {
+                    document.getElementById('fullscreen-copy-btn').classList.remove('hidden');
+                }
+            } else {
+                // Exit fullscreen
+                fullscreenIDE.classList.add('hidden');
+                document.getElementById('code').value = document.getElementById('fullscreenCode').value;
+                document.getElementById('output').innerHTML = document.getElementById('fullscreenOutput').innerHTML;
+                document.getElementById('language').value = document.getElementById('fullscreenLanguage').value;
+                document.body.style.overflow = 'auto';
+                
+                // Sync copy button visibility
+                const copyBtnVisible = !document.getElementById('fullscreen-copy-btn').classList.contains('hidden');
+                if (copyBtnVisible) {
+                    document.getElementById('copy-btn').classList.remove('hidden');
+                }
+            }
+            
+            lucide.createIcons();
+        };
+
+        window.loadExampleFullscreen = () => {
+            document.getElementById('fullscreenCode').value = `// Fibonacci sequence\nfunction fibonacci(n) {\n    if (n <= 1) return n;\n    return fibonacci(n - 1) + fibonacci(n - 2);\n}\n\nconsole.log(fibonacci(10));`;
+        };
+
+        window.clearCodeFullscreen = () => {
+            document.getElementById('fullscreenCode').value = '';
+            document.getElementById('fullscreen-copy-btn').classList.add('hidden');
+            document.getElementById('fullscreenOutput').innerHTML = `
+                <div id="fullscreenPlaceholder" class="h-full flex flex-col items-center justify-center text-slate-500">
+                    <i data-lucide="message-square" class="w-16 h-16 mb-4 opacity-50"></i>
+                    <p class="text-lg mb-2">Your AI analysis will appear here</p>
+                    <p class="text-sm opacity-70">Paste code and click Analyze to get started</p>
+                </div>`;
+            lucide.createIcons();
+        };
+
+        window.copyAnalysisFullscreen = () => {
+            const text = document.getElementById('fullscreenOutput').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('fullscreen-copy-btn');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-green-400"></i><span>Copied!</span>';
+                lucide.createIcons();
+                setTimeout(() => { btn.innerHTML = original; lucide.createIcons(); }, 2000);
+            });
+        };
+
+        window.analyzeCodeFullscreen = async () => {
+            const code = document.getElementById('fullscreenCode').value.trim();
+            const output = document.getElementById('fullscreenOutput');
+            const status = document.getElementById('fullscreenStatus');
+            const btn = document.getElementById('fullscreenAnalyzeBtn');
+            const icon = document.getElementById('fullscreen-analyze-icon');
+            
+            if (!code) return alert('Please paste your code');
+            
+            btn.disabled = true;
+            icon.classList.add('animate-spin');
+            status.innerHTML = `<div class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div><span class="text-xs text-amber-400">Analyzing...</span>`;
+            output.innerHTML = `<div class="h-full flex items-center justify-center"><div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>`;
+            
+            try {
+                const apiKey = process.env.GEMINI_API_KEY;
+                const langName = currentLang === 'km' ? 'Khmer' : 'English';
+                
+                if (apiKey && apiKey !== 'undefined' && apiKey !== '') {
+                    const ai = new GoogleGenAI({ apiKey });
+                    const response = await ai.models.generateContent({
+                        model: "gemini-3-flash-preview",
+                        contents: `You are an expert code analyst. Your task is to analyze the provided code and generate a high-quality, professional report.
+                        
+                        CRITICAL INSTRUCTIONS:
+                        - ALWAYS respond in ${langName} language.
+                        - ALWAYS use Markdown headers (# for title, ## for sections).
+                        - If the input is NOT code (e.g., just "hi" or a greeting), politely ask the user to provide a code snippet for analysis, but maintain the professional tone.
+                        - For code analysis, use exactly these sections:
+                          1. # Analysis Report
+                          2. ## Summary
+                          3. ## Line-by-Line Explanation
+                          4. ## Performance & Security
+                          5. ## Recommendations
+                        
+                        Input to analyze:\n\n${code}`,
+                    });
+                    
+                    output.innerHTML = `<div class="prose prose-invert max-w-none animate-fade-in">${marked.parse(response.text)}</div>`;
+                } else {
+                    // Mock for demo
+                    await new Promise(r => setTimeout(r, 1500));
+                    const mock = currentLang === 'km' ? 
+                        `# របាយការណ៍វិភាគ\n## សេចក្តីសង្ខេប\nកូដនេះគណនាលំដាប់ Fibonacci ។\n## ការពន្យល់\nវាប្រើ Recursion ដើម្បីរកតម្លៃ។` :
+                        `# Analysis Report\n## Summary\nThis code calculates Fibonacci sequence.`;
+                    output.innerHTML = `<div class="prose prose-invert max-w-none animate-fade-in">${marked.parse(mock)}</div>`;
+                }
+                
+                document.getElementById('fullscreen-copy-btn').classList.remove('hidden');
+                status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-400">Complete</span>`;
+            } catch (error) {
+                output.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-400">Error</span>`;
+            } finally {
+                btn.disabled = false;
+                icon.classList.remove('animate-spin');
+                lucide.createIcons();
+            }
         };
 
         // ===== AUTH MODAL FUNCTIONS =====
