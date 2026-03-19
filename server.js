@@ -1100,75 +1100,55 @@ const GROQ_MODELS = {
     POWERFUL: 'mixtral-8x7b-32768'
 };
 
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v11.0 - BRAND MATCH] =====
+/// ===== [SYSTEM IDENTITY: KONKMENG-AI v12.0 - STRICT ANTI-LOOP] =====
 const getSystemPrompt = (language) => {
     if (language === 'km') {
-        return `ឯងគឺជា KONKMENG-AI (Kon = កូនក្មេង)។ ពន្យល់កូដឱ្យកូនក្មេងយល់អ៊ីចឹង។
+        return `ឯងគឺជា KONKMENG-AI។
 
-# STRICT RULES - MUST FOLLOW:
-1. **KID ANALOGIES ONLY** - ប្រើរូបភាពស្រដៀងសម្រាប់កូនក្មេង៖
-   - Variable = ប្រអប់ដាក់ប្រដាប់ (Toy boxes)
-   - Array = ផ្លែឈើក្នុងកញ្ចប់ (Fruit baskets)
-   - Function = ម៉ាស៊ីនលក់ស្ករគ្រាប់ (Candy machines)
-   - Loop = លេងឈឺកោសដដែល
-   - Object = ផ្ទះមានបន្ទប់ច្រើន
-2. **ARROW FUNCTIONS ONLY** - ប្រើ () => {} ជានិច្ច។ ហាម .bind(this) ឬ function() {}
-3. **EVERY SINGLE LINE** - ពន្យល់គ្រប់បន្ទាត់ពីដើមដល់ចប់ មិនរំលង
-4. **NO JARGON** - បើប្រើពាក្យបច្ចេកទេស ត្រូវពន្យល់ភ្លាម
-5. **Master KoKo** - ហៅបងថា "Master KoKo" និងនិយាយ Gen Z
+ច្បាប់ដាច់ខាត៖
+១. ហាមប្រើពាក្យបច្ចេកទេសខ្មែរដែលវែងពេក (ដូចជា ការបញ្ជាក់ថា...)។
+២. ពន្យល់កូដ ១ បន្ទាត់ ប្រើតែ ១ ប្រយោគខ្លី។
+៣. បើអស់អ្វីត្រូវនិយាយ ត្រូវឈប់ភ្លាម។
+៤. ជួសជុលកូដដោយប្រើ Arrow Function () => {} តែប៉ុណ្ណោះ។
 
-📋 **OUTPUT ORDER:**
-🚀 **VIBE:** [មតិថាមពល ១ ឃ្លា]
-📝 **AUDIT:** [បញ្ហាដែល Master KoKo ជួប]
-✅ **FIX (តែ () => {} ប៉ុណ្ណោះ):**
-\`\`\`${language}
-[កូដកែហើយ ប្រើតែ Arrow Functions]
-\`\`\`
-📖 **LINE-BY-LINE (រូបភាពកូនក្មេង):**
-*បន្ទាត់ [N]: [ពន្យល់ដោយរូបភាពដូច "នេះដូចជាប្រអប់ដាក់ប្រដាប់"]
-*បន្ទាត់ [N+1]: [ពន្យល់បន្ត]
-(បន្តរហូតគ្រប់បន្ទាត់!)
+📋 **ទម្រង់:**
+🚀 VIBE: [ខ្លី]
+📝 AUDIT: [បញ្ហា]
+✅ FIX: [() => {}]
+📖 LINES:
+*[N]: [១ ប្រយោគ]
+*[N+1]: [១ ប្រយោគ]
 
-> **💡 TIP:** [អនុសាសន៍មួយ]
+> TIP: [ខ្លី]
 
 ---
-*Status: v11.0 | Mode: Kid-Friendly*`;
+Status: v12.0`;
     } else {
-        return `You are KONKMENG-AI (Kon = Kid). Explain code so simply that even a kid can understand.
+        return `You are KONKMENG-AI.
 
-# STRICT RULES - MUST FOLLOW:
-1. **KID ANALOGIES ONLY** - Use kid-friendly comparisons:
-   - Variable = Toy boxes
-   - Array = Fruit baskets
-   - Function = Candy machines
-   - Loop = Playing hopscotch repeatedly
-   - Object = House with many rooms
-2. **ARROW FUNCTIONS ONLY** - Always use () => {}. NO .bind(this) or function() {}
-3. **EVERY SINGLE LINE** - Explain EVERY line from start to finish, NO skipping
-4. **NO JARGON** - If technical word used, explain simply immediately
-5. **Master KoKo** - Address as "Master KoKo" with Gen Z style
+STRICT RULES:
+1. NO long technical words.
+2. 1 sentence per line ONLY.
+3. STOP when done.
+4. Use ONLY Arrow Functions () => {}.
 
-📋 **OUTPUT ORDER:**
-🚀 **VIBE:** [One energetic line]
-📝 **AUDIT:** [Issues Master KoKo faced]
-✅ **FIX (Only () => {}):**
-\`\`\`${language}
-[Fixed code using only Arrow Functions]
-\`\`\`
-📖 **LINE-BY-LINE (Kid analogies):**
-*Line [N]: [Explain with analogy like "This is like a toy box"]
-*Line [N+1]: [Continue explaining]
-(Continue until ALL lines!)
+FORMAT:
+🚀 VIBE: [short]
+📝 AUDIT: [issues]
+✅ FIX: [() => {}]
+📖 LINES:
+*[N]: [1 sentence]
+*[N+1]: [1 sentence]
 
-> **💡 TIP:** [One recommendation]
+> TIP: [short]
 
 ---
-*Status: v11.0 | Mode: Kid-Friendly*`;
+Status: v12.0`;
     }
 };
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v11.0 Kid-Friendly Engine (Kon = Kid)
+ * @desc Analyze code with KONKMENG-AI v12.0 Strict Anti-Loop Engine
  */
 app.post('/api/analyze-code', async (req, res) => {
     try {
@@ -1198,38 +1178,41 @@ app.post('/api/analyze-code', async (req, res) => {
                 { 
                     role: 'user', 
                     content: responseLang === 'km' 
-                        ? `ជម្រាបសួរ Master KoKo! នេះជាកូដ ${language}។ សូមពន្យល់ឱ្យកូនក្មេងយល់៖\n\n\`\`\`${language}\n${code}\n\`\`\``
-                        : `Hello Master KoKo! Here is ${language} code. Explain like a kid would understand:\n\n\`\`\`${language}\n${code}\n\`\`\``
+                        ? `វិភាគ ${language}៖\n\n\`\`\`${language}\n${code}\n\`\`\``
+                        : `Analyze ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``
                 }
             ],
-            temperature: 0,                    // Strict logic
-            top_p: 0.1,                        // Simple, clear words
-            frequency_penalty: 2.0,            // Max penalty to stop repetition 100%
-            presence_penalty: 1.0,             // Force progression to next lines
-            max_tokens: 2500,                  // Space for detailed kid-friendly explanations
-            stop: ["---", "Status:", "📋", "🔧"]  // Stop sequences for clean termination
+            temperature: 0,
+            top_p: 0.1,
+            frequency_penalty: 2.0,
+            presence_penalty: 1.5,
+            max_tokens: 600,
+            stop: ["។", "---", "Status:"]
         }, {
             headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
-            timeout: 45000
+            timeout: 30000
         });
 
         if (response.data?.choices?.[0]) {
             let successResponse = response.data.choices[0].message.content;
             
-            // Enhanced response cleaning - detect and remove repeated sentences
-            const sentences = successResponse.split('. ').filter(s => s.trim());
-            const uniqueSentences = [];
-            const seen = new Set();
+            // STRICT ANTI-LOOP: Truncate if sentence repeats > 2 times
+            const sentenceCounts = {};
+            const sentences = successResponse.split(/[.។]\s+/).filter(s => s.trim());
+            const filteredSentences = [];
             
             for (const sentence of sentences) {
-                const clean = sentence.trim().toLowerCase();
-                if (!seen.has(clean) && clean.length > 0) {
-                    seen.add(clean);
-                    uniqueSentences.push(sentence.trim());
+                const clean = sentence.trim().toLowerCase().substring(0, 50);
+                sentenceCounts[clean] = (sentenceCounts[clean] || 0) + 1;
+                
+                // If sentence repeats more than 2 times, stop adding
+                if (sentenceCounts[clean] > 2) {
+                    break;
                 }
+                filteredSentences.push(sentence.trim());
             }
             
-            successResponse = uniqueSentences.join('. ');
+            successResponse = filteredSentences.join('. ');
             
             // Save to history (if logged in)
             const authHeader = req.headers['authorization'];
@@ -1252,7 +1235,7 @@ app.post('/api/analyze-code', async (req, res) => {
                 analysis: successResponse,
                 responseLanguage: responseLang,
                 model: modelToUse,
-                status: responseLang === 'km' ? `រួចរាល់ v11.0 ✅` : `Done v11.0 ✅`
+                status: responseLang === 'km' ? `រួចរាល់ v12.0 ✅` : `Done v12.0 ✅`
             });
         }
 
