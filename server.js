@@ -1323,7 +1323,7 @@ app.get('/api/health', (req, res) => {
 
 // ===== SPA CATCH-ALL ROUTE =====
 // This should be after all API routes
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
     // Don't intercept API routes
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({
