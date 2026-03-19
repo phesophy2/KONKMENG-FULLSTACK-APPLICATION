@@ -1100,60 +1100,45 @@ const GROQ_MODELS = {
     POWERFUL: 'mixtral-8x7b-32768'
 };
 
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v7.5 - DEEP THINKING] =====
+/// ===== [SYSTEM IDENTITY: KONKMENG-AI v8.0 - ANTI-REPETITION] =====
 const getSystemPrompt = (language) => {
     if (language === 'km') {
-        return `ឯងគឺជា "KONKMENG-AI v7.5" (The Deep Thinking Soul of KoKo)។ ឯងជាកំពូល Senior Software Architect និងជាមជ្ឈមណ្ឌលខួរក្បាលនៃគម្រោង KONKMENG ដែលមាន Deep Thinking Capabilities។
+        return `ឯងគឺជា KONKMENG-AI v8.0 ជាអ្នកជំនាញ Architect។
 
-# យុទ្ធសាស្ត្រ Deep Thinking v7.5 (CHAIN OF THOUGHT):
-1. **Absolute Logic (Temp 0):** ឯងត្រូវប្រើតក្កវិជ្ជាសុទ្ធសាធ 100%។ រាល់ចម្លើយត្រូវតែជាដំណោះស្រាយដែលល្អបំផុត (Most Optimized) គ្មានការស្មាន ឬរវើរវាយ។
-2. **Chain of Thought Protocol:** មុននឹងឆ្លើយ ត្រូវគិតជាលំដាប់លំដោយ៖ Problem → Analysis → Solution → Optimization → Security Check។
-3. **Deep Thinking Architecture:** វិភាគកូដដល់ឫសគល់។ ត្រូវឆែកមើល Big O Complexity, Security Holes (SQLi, XSS, CSRF), Memory Management, និង Design Patterns។
-4. **Gen Z Khmerlish v7.5:** ឈ្មោះរបស់ឯងគឺ "KONKMENG-AI"។ ប្រើពាក្យ "បង", "អូន", "លោកម្ចាស់ KoKo", "ណា៎", "ហ្នឹងហើយ", "ញាក់សាច់", "អូហូ"។
-5. **Master Loyalty Protocol:** ឯងបម្រើលោកម្ចាស់ KoKo តែម្នាក់គត់។ បើគាត់មិនពេញចិត្ត ឯងត្រូវកែសម្រួលភ្លាម។
+# CRITICAL RULES:
+1. **NO REPETITION** - ហាមដាច់ពាក្យដដែល។ ពាក្យគ្រប់ឃ្លាត្រូវខុសគ្នា
+2. **CONCISE ONLY** - ឆ្លើយខ្លី។ មិនលើកឡើងស្រដៀង
+3. **DIRECT ANSWER** - ចូលក្នុងប្រធានបទភ្លាម។ មិនពន្យល់វែង
 
-📋 **រចនាសម្ព័ន្ធឆ្លើយតប v7.5 (STRICT OUTPUT FORMAT):**
-
-🚀 **VIBE CHECK:**
-[សរសើរកូដ ឬផ្ដល់ Feedback បែបឌឺដង និងមានថាមពល ១ ឃ្លាខ្លី (ឧទាហរណ៍៖ "ញាក់សាច់បង! Logic នេះគ្រហើហ្មង!", "អូហូ! កូដនេះរញ៉េរញ៉ៃបន្តិចហើយ ចាំ KONKMENG-AI v7.5 ជួយសម្រួលឱ្យអេមវិញ!")]
-
-📝 **CODE AUDIT (វិភាគចំណុចខ្សោយ):**
-*បន្ទាត់ទី [លេខ]: [កូដដើម] -> [ហេតុផលបច្ចេកទេសដែលវាខុស ឬចំណុចដែលត្រូវ Optimize]
-
-✅ **GOD-MODE CODE v7.5 (កូដដែលបាន UPGRADE):**
-\`\`\`[language]
-[សរសេរកូដដែល Optimized បំផុត គ្មាន Bug ដើរលឿន និងមានសុវត្ថិភាពបំផុត]
-\`\`\`
-
-📖 **DEEP EXPLANATION v7.5 (បំបែក Logic):**
-*បន្ទាត់ទី [លេខ]: [ពន្យល់ពីដំណើរការខាងក្នុង (Internal Mechanics) ដោយប្រើ Slang បច្ចេកទេសឱ្យ Master KoKo យល់ច្បាស់]
-
-> **💡 SENIOR SECRET v7.5:** [ផ្ដល់តិចនិកសម្ងាត់កម្រិត Expert ១ ដើម្បីឱ្យលោកម្ចាស់ KoKo កាន់តែខ្លាំង]
+📋 **FORMAT:**
+🚀 **FEEDBACK:** [ឃ្លា មួយ]
+📝 **ISSUE:** [បញ្ហា ខ្លីៗ]
+✅ **FIX:** [កូដកែវែង]
+📖 **WHY:** [ពន្យល់ ខ្លី]
 
 ---
-*Status: Active ✅ | Mode: Deep Thinking v7.5 � | Powered by KONKMENG-AI*`;
+*Status: Active ✅ | Mode: Anti-Repetition*`;
     } else {
-        return `You are "KONKMENG-AI v7.5", an elite Deep Thinking Coding Engine & Senior Architect.
+        return `You are KONKMENG-AI v8.0, an Expert Architect.
 
-# MASTER LOGIC v7.5:
-- Zero Hallucination: Use pure reasoning to provide the single most efficient solution.
-- Chain of Thought: Problem → Analysis → Solution → Optimization → Security Check.
-- Critical Audit: Analyze Big O, Security, Design Patterns (SOLID, DRY, KISS).
-- Personality: Punchy, high-energy, and technical developer slang. You serve Master KoKo exclusively.
+# CRITICAL RULES:
+1. **NO REPETITION** - Never repeat phrases. Each sentence must be unique.
+2. **CONCISE ONLY** - Short responses. No lengthy explanations.
+3. **DIRECT ANSWER** - Get to the point immediately.
 
-📋 **RESPONSE FORMAT v7.5:**
-🚀 **VIBE CHECK:** [Short high-energy feedback]
-📝 **CODE AUDIT:** [Critical line-by-line flaw analysis]
-✅ **UPGRADED CODE:** [The most efficient production-ready version]
-📖 **DEEP DIVE:** [Low-level technical explanation]
-💡 **SENIOR TIP:** [An advanced architectural insight]
+📋 **FORMAT:**
+🚀 **FEEDBACK:** [One line]
+📝 **ISSUE:** [Brief problems]
+✅ **FIX:** [Corrected code]
+📖 **WHY:** [Short explanation]
 
-*Status: Active ✅ | Mode: Deep Thinking v7.5 �*`;
+---
+*Status: Active ✅ | Mode: Anti-Repetition*`;
     }
 };
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v7.5 Deep Thinking Engine
+ * @desc Analyze code with KONKMENG-AI v8.0 Anti-Repetition Engine
  */
 app.post('/api/analyze-code', async (req, res) => {
     try {
@@ -1173,76 +1158,84 @@ app.post('/api/analyze-code', async (req, res) => {
             });
         }
 
-        const modelsToTry = [
-            { name: GROQ_MODELS.BALANCED, type: 'Balanced' }, // យក Model ឆ្លាតមុន
-            { name: GROQ_MODELS.POWERFUL, type: 'Powerful' },
-            { name: GROQ_MODELS.FAST, type: 'Fast' }
-        ];
+        // Use only the most reliable model to prevent repetition
+        const modelToUse = GROQ_MODELS.BALANCED;
 
-        let lastError = null;
-        let successResponse = null;
-
-        for (const modelInfo of modelsToTry) {
-            try {
-                const response = await axios.post(GROQ_API_URL, {
-                    model: modelInfo.name,
-                    messages: [
-                        { role: 'system', content: getSystemPrompt(responseLang) },
-                        { 
-                            role: 'user', 
-                            content: responseLang === 'km' 
-                                ? `ជម្រាបសួរ KoKo AI! នេះជាកូដ ${language} របស់លោកម្ចាស់ KoKo។ ជួយវិភាគឱ្យស៊ីជម្រៅបំផុត v7.5៖\n\n\`\`\`${language}\n${code}\n\`\`\``
-                                : `Analyze this ${language} code deeply for Master KoKo v7.5:\n\n\`\`\`${language}\n${code}\n\`\`\``
-                        }
-                    ],
-                    temperature: 0,                    // Absolute logic for Deep Thinking
-                    max_tokens: 2500,                // Enhanced token limit for detailed analysis
-                    top_p: 0.9,
-                    frequency_penalty: 1.2,          // Kill repetition bug
-                    presence_penalty: 1.0,           // Deep analysis enhancement
-                    stop: ["---", "Status:"]         // Stop sequences for clean output
-                }, {
-                    headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
-                    timeout: 60000                   // Increased timeout for Deep Thinking
-                });
-
-                if (response.data?.choices?.[0]) {
-                    successResponse = response.data.choices[0].message.content;
-                    
-                    // Save to history (if logged in)
-                    const authHeader = req.headers['authorization'];
-                    const token = authHeader && authHeader.split(' ')[1];
-                    if (token) {
-                        try {
-                            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-                            await User.findByIdAndUpdate(decoded.id, {
-                                $push: {
-                                    analysisHistory: { code, language, analysis: successResponse, createdAt: new Date() }
-                                }
-                            });
-                        } catch (err) { console.log('⚠️ History log failed'); }
+        try {
+            const response = await axios.post(GROQ_API_URL, {
+                model: modelToUse,
+                messages: [
+                    { role: 'system', content: getSystemPrompt(responseLang) },
+                    { 
+                        role: 'user', 
+                        content: responseLang === 'km' 
+                            ? `វិភាគកូដ ${language} ខ្លីៗ:\n\n\`\`\`${language}\n${code}\n\`\`\``
+                            : `Analyze this ${language} code briefly:\n\n\`\`\`${language}\n${code}\n\`\`\``
                     }
-                    break;
-                }
-            } catch (error) { lastError = error; }
-        }
+                ],
+                temperature: 0,                    // Strict logic
+                top_p: 0.5,                        // Lower variety to stay on track
+                frequency_penalty: 1.5,            // Max penalty to kill repetitions
+                presence_penalty: 1.0,             // Force new topics
+                max_tokens: 1000,                  // Prevent long recursive responses
+                stop: ["---", "Status:", "📋 **កូដដែលត្រូវជួសជុល៖**"]  // Stop repetition triggers
+            }, {
+                headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
+                timeout: 30000
+            });
 
-        if (successResponse) {
-            return res.json({
-                success: true,
-                analysis: successResponse,
-                responseLanguage: responseLang,
-                model: modelInfo.name,
-                status: responseLang === 'km' ? `រួចរាល់ហើយ លោកម្ចាស់ KoKo! v7.5 ✅` : `Ready for you, Master KoKo! v7.5 ✅`
+            if (response.data?.choices?.[0]) {
+                let successResponse = response.data.choices[0].message.content;
+                
+                // Response cleaning - detect and remove repeated sentences
+                const sentences = successResponse.split('. ').filter(s => s.trim());
+                const uniqueSentences = [];
+                const seen = new Set();
+                
+                for (const sentence of sentences) {
+                    const clean = sentence.trim().toLowerCase();
+                    if (!seen.has(clean) && clean.length > 0) {
+                        seen.add(clean);
+                        uniqueSentences.push(sentence.trim());
+                    }
+                }
+                
+                successResponse = uniqueSentences.join('. ');
+                
+                // Save to history (if logged in)
+                const authHeader = req.headers['authorization'];
+                const token = authHeader && authHeader.split(' ')[1];
+                if (token) {
+                    try {
+                        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                        await User.findByIdAndUpdate(decoded.id, {
+                            $push: {
+                                analysisHistory: { code, language, analysis: successResponse, createdAt: new Date() }
+                            }
+                        });
+                    } catch (err) { 
+                        console.log('⚠️ History log failed'); 
+                    }
+                }
+                
+                return res.json({
+                    success: true,
+                    analysis: successResponse,
+                    responseLanguage: responseLang,
+                    model: modelToUse,
+                    status: responseLang === 'km' ? `រួចរាល់ហើយ លោកម្ចាស់ KoKo! ✅` : `Ready for you, Master KoKo! ✅`
+                });
+            }
+
+            throw new Error('AI model failed to respond');
+            
+        } catch (error) {
+            const responseLang = req.body?.responseLang || 'en';
+            res.status(500).json({
+                error: responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed',
+                details: error.message
             });
         }
-
-        // Enhanced fallback mechanism
-        if (!lastError) {
-            lastError = new Error('All AI models failed to respond');
-        }
-        
-        throw lastError;
     } catch (error) {
         const responseLang = req.body?.responseLang || 'en';
         res.status(500).json({
