@@ -1142,7 +1142,8 @@
             output.innerHTML = `<div class="h-full flex items-center justify-center"><div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>`;
             
             try {
-                const apiKey = process.env.GEMINI_API_KEY;
+                // For now, use mock response since we can't access environment variables in browser
+                const apiKey = null; // process.env.GEMINI_API_KEY is not available in browser
                 const langName = currentLang === 'km' ? 'Khmer' : 'English';
                 
                 if (apiKey && apiKey !== 'undefined' && apiKey !== '') {
@@ -1422,7 +1423,8 @@
             output.innerHTML = `<div class="h-full flex items-center justify-center"><div class="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div></div>`;
             
             try {
-                const apiKey = process.env.GEMINI_API_KEY;
+                // For now, use mock response since we can't access environment variables in browser
+                const apiKey = null; // process.env.GEMINI_API_KEY is not available in browser
                 const langName = currentLang === 'km' ? 'Khmer' : 'English';
                 
                 if (apiKey && apiKey !== 'undefined' && apiKey !== '') {
