@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const redis = require('redis');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
@@ -110,17 +110,26 @@ async function setupRedis() {
 // Initialize Redis
 setupRedis();
 
-// ===== GEMINI API CONFIGURATION =====
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+// ===== GROQ API CONFIGURATION =====
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const groq = GROQ_API_KEY ? new Groq({ apiKey: GROQ_API_KEY }) : null;
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
-console.log('\n🔍 ===== KONKMENG AI SYSTEM v5.0 =====');
-console.log('🔑 GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+// Groq usage stats
+let groqUsageStats = {
+    success: 0,
+    failed: 0,
+    totalTokens: 0,
+    lastUsed: null
+};
+
+console.log('\n🔍 ===== KONKMENG AI SYSTEM v5.1 | Groq Edition =====');
+console.log('🔑 GROQ_API_KEY exists:', !!process.env.GROQ_API_KEY);
 console.log('🔑 MONGODB_URI exists:', !!process.env.MONGODB_URI);
 console.log('🔑 JWT_SECRET exists:', !!process.env.JWT_SECRET);
 console.log('📧 EMAIL_SERVICE: Ethereal Email (Test/Development)');
 console.log('💾 REDIS_CACHE: Initializing...');
-console.log('🔒 SECURITY_AUDIT: Advanced (SQL, XSS, Secrets)');
+console.log('🤖 AI_ENGINE: Groq (Llama 3.3 70B Versatile)');
 console.log('🔑 PORT:', PORT);
 console.log('====================================\n');
 
@@ -1156,129 +1165,55 @@ app.post('/api/auth/github', async (req, res) => {
 
 // ===== CODE ANALYSIS ROUTE =====
 
-// Gemini model fallback strategy - optimized for 1,500 RPD quota
-const GEMINI_MODELS = [
-    'gemini-1.5-flash-latest',  // Primary: 1.5 Flash (1,500 RPD quota)
-    'gemini-1.5-pro-latest',    // Fallback: 1.5 Pro (higher quality)
-    'gemini-1.0-pro-latest'     // Last resort: 1.0 Pro (stable)
-];
-
-// Track model usage for monitoring with auto-reset
-const STATS_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
-
-let modelUsageStats = {
-    'gemini-1.5-flash-latest': { success: 0, failed: 0, lastReset: Date.now() },
-    'gemini-1.5-pro-latest': { success: 0, failed: 0, lastReset: Date.now() },
-    'gemini-1.0-pro-latest': { success: 0, failed: 0, lastReset: Date.now() }
-};
-
-let statsHistory = []; // Keep last 7 days
-
-// Reset stats every 24 hours to prevent memory leaks
+// Reset stats every 24 hours
+const STATS_RESET_INTERVAL = 24 * 60 * 60 * 1000;
 setInterval(() => {
-    // Save current stats to history
-    statsHistory.push({
-        timestamp: new Date().toISOString(),
-        stats: JSON.parse(JSON.stringify(modelUsageStats))
-    });
-    
-    // Keep only last 7 days
-    if (statsHistory.length > 7) {
-        statsHistory.shift();
-    }
-    
-    // Reset current stats
-    Object.keys(modelUsageStats).forEach(model => {
-        modelUsageStats[model] = { success: 0, failed: 0, lastReset: Date.now() };
-    });
-    
-    console.log('📊 Model stats reset - saved to history');
+    groqUsageStats = { success: 0, failed: 0, totalTokens: 0, lastUsed: null };
+    console.log('📊 Groq stats reset');
 }, STATS_RESET_INTERVAL);
 
-// ===== SERVER-SIDE SECURITY SCANNING =====
+/// ===== [SYSTEM IDENTITY: KONKMENG-AI v5.1 | Groq Edition - MINIMALIST CODE EXPLAINER] =====
 /**
- * Performs server-side vulnerability scanning before sending to Gemini
- * Detects SQL injection, XSS, and hardcoded secrets (including obfuscated)
+ * Convert language name to proper markdown language tag
+ * @param {string} language - The language name (e.g., "JavaScript", "Python")
+ * @returns {string} The markdown language tag (e.g., "javascript", "python")
  */
-function performSecurityScan(code) {
-    const vulnerabilities = [];
+const getLanguageTag = (language) => {
+    const languageMap = {
+        'JavaScript': 'javascript',
+        'TypeScript': 'typescript',
+        'Python': 'python',
+        'Java': 'java',
+        'C++': 'cpp',
+        'C#': 'csharp',
+        'C': 'c',
+        'PHP': 'php',
+        'Ruby': 'ruby',
+        'Go': 'go',
+        'Rust': 'rust',
+        'Swift': 'swift',
+        'Kotlin': 'kotlin',
+        'SQL': 'sql',
+        'HTML': 'html',
+        'CSS': 'css',
+        'JSON': 'json',
+        'XML': 'xml',
+        'YAML': 'yaml',
+        'Markdown': 'markdown',
+        'Shell': 'bash',
+        'Bash': 'bash',
+        'PowerShell': 'powershell',
+        'R': 'r',
+        'Scala': 'scala',
+        'Perl': 'perl',
+        'Lua': 'lua',
+        'Dart': 'dart',
+        'Objective-C': 'objectivec'
+    };
     
-    // 1. SQL Injection patterns (including obfuscated)
-    const sqlPatterns = [
-        { pattern: /SELECT\s+.*\s+FROM/gi, name: 'SQL SELECT' },
-        { pattern: /INSERT\s+INTO/gi, name: 'SQL INSERT' },
-        { pattern: /UPDATE\s+.*\s+SET/gi, name: 'SQL UPDATE' },
-        { pattern: /DELETE\s+FROM/gi, name: 'SQL DELETE' },
-        { pattern: /DROP\s+TABLE/gi, name: 'SQL DROP' },
-        { pattern: /UNION\s+SELECT/gi, name: 'SQL UNION' },
-        { pattern: /exec\s*\(/gi, name: 'SQL EXEC' },
-        { pattern: /execute\s*\(/gi, name: 'SQL EXECUTE' },
-        { pattern: /eval\s*\(\s*atob/gi, name: 'Obfuscated eval(atob)' },
-        { pattern: /String\.fromCharCode/gi, name: 'String.fromCharCode obfuscation' },
-        { pattern: /Buffer\.from.*base64/gi, name: 'Base64 Buffer obfuscation' }
-    ];
-    
-    sqlPatterns.forEach(({ pattern, name }) => {
-        if (pattern.test(code)) {
-            vulnerabilities.push({
-                type: 'SQL_INJECTION',
-                severity: 'HIGH',
-                pattern: name,
-                message: `រកឃើញលំនាំ ${name} ដែលអាចបង្កគ្រោះថ្នាក់`
-            });
-        }
-    });
-    
-    // 2. XSS patterns
-    const xssPatterns = [
-        { pattern: /<script[^>]*>.*<\/script>/gi, name: '<script> tag' },
-        { pattern: /javascript:/gi, name: 'javascript: protocol' },
-        { pattern: /on\w+\s*=/gi, name: 'Event handler (onclick, onerror, etc.)' },
-        { pattern: /eval\s*\(/gi, name: 'eval() function' },
-        { pattern: /innerHTML\s*=/gi, name: 'innerHTML assignment' },
-        { pattern: /document\.write/gi, name: 'document.write()' }
-    ];
-    
-    xssPatterns.forEach(({ pattern, name }) => {
-        if (pattern.test(code)) {
-            vulnerabilities.push({
-                type: 'XSS',
-                severity: 'HIGH',
-                pattern: name,
-                message: `រកឃើញលំនាំ ${name} ដែលអាចបង្កគ្រោះថ្នាក់ XSS`
-            });
-        }
-    });
-    
-    // 3. Hardcoded secrets (including encoded)
-    const secretPatterns = [
-        { pattern: /api[_-]?key\s*[:=]\s*['"][^'"]+['"]/gi, name: 'API Key' },
-        { pattern: /password\s*[:=]\s*['"][^'"]+['"]/gi, name: 'Password' },
-        { pattern: /secret\s*[:=]\s*['"][^'"]+['"]/gi, name: 'Secret' },
-        { pattern: /token\s*[:=]\s*['"][^'"]+['"]/gi, name: 'Token' },
-        { pattern: /AIza[0-9A-Za-z_-]{35}/g, name: 'Google API Key' },
-        { pattern: /sk-[a-zA-Z0-9]{48}/g, name: 'OpenAI API Key' },
-        { pattern: /ghp_[a-zA-Z0-9]{36}/g, name: 'GitHub Token' },
-        { pattern: /['"][A-Za-z0-9+/]{40,}={0,2}['"]/g, name: 'Base64 encoded secret' }
-    ];
-    
-    secretPatterns.forEach(({ pattern, name }) => {
-        const matches = code.match(pattern);
-        if (matches) {
-            vulnerabilities.push({
-                type: 'HARDCODED_SECRET',
-                severity: 'CRITICAL',
-                pattern: name,
-                count: matches.length,
-                message: `រកឃើញ ${name} ដែលបានបង្កប់ក្នុងកូដ (${matches.length} កន្លែង)`
-            });
-        }
-    });
-    
-    return vulnerabilities;
-}
+    return languageMap[language] || language.toLowerCase();
+};
 
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v5.0 - GEMINI POWERED WITH SECURITY] =====
 /**
  * Returns the system prompt for the given language.
  * 
@@ -1286,86 +1221,133 @@ function performSecurityScan(code) {
  * @returns {string} The system prompt.
  */
 const getSystemPrompt = (language) => {
+    const langTag = getLanguageTag(language);
     if (language === 'km') {
-        return `អ្នកគឺជា KONKMENG-AI v5.0 ជំនាញខាងវិភាគកូដ និងសុវត្ថិភាពសម្រាប់អ្នកសរសេរកូដ។
+        return `អ្នកគឺជា KONKMENG AI v5.1 - AI ជំនាញពន្យល់កូដដ៏ឆ្លាតវៃ។
 
-# គោលការណ៍ឆ្លើយតប:
-១. ប្រើភាសាខ្មែរធម្មជាតិ ១០០% គ្មានភាសាបរទេសលាយឡំ
-២. ពន្យល់ច្បាស់លាស់ ងាយយល់ សម្រាប់អ្នកចាប់ផ្តើម
-៣. ផ្តល់ដំណោះស្រាយជាក់ស្តែង មិនមែនទ្រឹស្តីទេ
-៤. រកបញ្ហាសុវត្ថិភាពជាចាំបាច់
+📋 **ទម្រង់ឆ្លើយតប (ប្រើ Markdown styling):**
 
-# ទម្រង់ឆ្លើយតប:
-🔍 **វិភាគកូដ:**
-[ពន្យល់អំពីកូដនេះធ្វើអ្វី]
+┌─────────────────────────────────────┐
+│ 🎯 **សង្ខេបកូដ**                      │
+└─────────────────────────────────────┘
+[ពន្យល់សង្ខេបអំពីអ្វីដែលកូដធ្វើ ក្នុង 2-3 ប្រយោគ]
 
-⚠️ **បញ្ហាដែលរកឃើញ:**
-- [បញ្ហាទី១]
-- [បញ្ហាទី២]
+┌─────────────────────────────────────┐
+│ 🔍 **វិភាគលម្អិត**                    │
+└─────────────────────────────────────┘
+[ពន្យល់លម្អិតអំពី logic, algorithm, និង design patterns]
 
-🔒 **ការវិនិច្ឆ័យសុវត្ថិភាព:**
-- SQL Injection: [មាន/គ្មាន - ពន្យល់]
-- XSS (Cross-Site Scripting): [មាន/គ្មាន - ពន្យល់]
-- ការលាក់ពាក្យសម្ងាត់/API Keys: [មាន/គ្មាន - ពន្យល់]
-- ពិន្ទុសុវត្ថិភាព: [X/១០] - [មូលហេតុ]
+┌─────────────────────────────────────┐
+│ ⚠️ **បញ្ហា & ការកែលម្អ**              │
+└─────────────────────────────────────┘
+${language === 'km' ? '✅ **អ្វីដែលល្អ:**' : '✅ **Good:**'}
+• [ចំណុចវិជ្ជមាន]
 
-✅ **កូដដែលកែប្រែ:**
-\`\`\`${language}
-[កូដដែលបានកែប្រែ]
+${language === 'km' ? '⚠️ **អ្វីដែលត្រូវកែ:**' : '⚠️ **Needs Improvement:**'}
+• [ចំណុចដែលត្រូវកែលម្អ]
+
+${language === 'km' ? '💡 **ដំបូន្មាន:**' : '💡 **Suggestions:**'}
+• [ដំបូន្មានកែលម្អ]
+
+┌─────────────────────────────────────┐
+│ 📖 **ពន្យល់បន្ទាត់ម្តងមួយៗ**          │
+└─────────────────────────────────────┘
+\`\`\`${langTag}
+[បង្ហាញកូដដើមជាមួយលេខបន្ទាត់]
 \`\`\`
 
-📖 **ពន្យល់បន្ទាត់ម្តងមួយៗ:**
-- បន្ទាត់ [N]: [ពន្យល់]
-- បន្ទាត់ [N+1]: [ពន្យល់]
+**ការពន្យល់:**
+• **បន្ទាត់ 1-X:** [ពន្យល់ក្រុមបន្ទាត់ដែលទាក់ទង]
+• **បន្ទាត់ Y:** [ពន្យល់បន្ទាត់សំខាន់]
 
-💡 **ដំបូន្មាន:**
-[ដំបូន្មានសម្រាប់កែលម្អ]
+┌─────────────────────────────────────┐
+│ 🎨 **ឧទាហរណ៍ប្រើប្រាស់**              │
+└─────────────────────────────────────┘
+\`\`\`${langTag}
+[បង្ហាញឧទាហរណ៍របៀបប្រើកូដនេះ]
+\`\`\`
+
+**Output:**
+\`\`\`
+[បង្ហាញលទ្ធផលដែលរំពឹងទុក]
+\`\`\`
 
 ---
-Version: 5.0 | Engine: Gemini 1.5 Flash | Security: Advanced`;
+💬 **សន្និដ្ឋាន:** [សង្ខេបចុងក្រោយ 1 ប្រយោគ]
+
+**ច្បាប់សំខាន់:**
+- ប្រើ emojis ឱ្យច្រើនដើម្បីឱ្យគួរឱ្យចាប់អារម្មណ៍
+- ប្រើ boxes (┌─┐ │ └─┘) ដើម្បីបែងចែក sections
+- ប្រើ **bold** សម្រាប់ពាក្យសំខាន់
+- ប្រើ \`code\` សម្រាប់ code snippets
+- ប្រើ bullet points (•) ជំនួស hyphens (-)
+- Code blocks ត្រូវតែប្រើ \`\`\`${langTag}\`\`\` (មិនមែន \`\`\`km\`\`\`)`;
     } else {
-        return `You are KONKMENG-AI v5.0, a code analysis and security expert for developers.
+        return `You are KONKMENG AI v5.1 - An intelligent code explanation AI.
 
-# Response Guidelines:
-1. Provide clear, practical explanations
-2. Focus on actionable solutions
-3. Always include security analysis
-4. Use modern best practices
+📋 **Response Format (Use Markdown styling):**
 
-# Response Format:
-🔍 **Code Analysis:**
-[Explain what this code does]
+┌─────────────────────────────────────┐
+│ 🎯 **Code Summary**                  │
+└─────────────────────────────────────┘
+[Brief 2-3 sentence summary of what the code does]
 
-⚠️ **Issues Found:**
-- [Issue 1]
-- [Issue 2]
+┌─────────────────────────────────────┐
+│ 🔍 **Detailed Analysis**             │
+└─────────────────────────────────────┘
+[Detailed explanation of logic, algorithms, and design patterns]
 
-🔒 **Security Audit:**
-- SQL Injection: [Present/Absent - Explanation]
-- XSS (Cross-Site Scripting): [Present/Absent - Explanation]
-- Hardcoded Secrets/API Keys: [Present/Absent - Explanation]
-- Security Score: [X/10] - [Reasoning]
+┌─────────────────────────────────────┐
+│ ⚠️ **Issues & Improvements**         │
+└─────────────────────────────────────┘
+✅ **Good Points:**
+• [Positive aspects]
 
-✅ **Fixed Code:**
-\`\`\`${language}
-[Fixed code]
+⚠️ **Needs Improvement:**
+• [Areas that need improvement]
+
+💡 **Suggestions:**
+• [Improvement recommendations]
+
+┌─────────────────────────────────────┐
+│ 📖 **Line-by-Line Breakdown**        │
+└─────────────────────────────────────┘
+\`\`\`${langTag}
+[Show original code with line numbers]
 \`\`\`
 
-📖 **Line-by-Line Explanation:**
-- Line [N]: [Explanation]
-- Line [N+1]: [Explanation]
+**Explanation:**
+• **Lines 1-X:** [Explain related group of lines]
+• **Line Y:** [Explain important line]
 
-💡 **Recommendations:**
-[Suggestions for improvement]
+┌─────────────────────────────────────┐
+│ 🎨 **Usage Example**                 │
+└─────────────────────────────────────┘
+\`\`\`${langTag}
+[Show example of how to use this code]
+\`\`\`
+
+**Output:**
+\`\`\`
+[Show expected output]
+\`\`\`
 
 ---
-Version: 5.0 | Engine: Gemini 1.5 Flash | Security: Advanced`;
+💬 **Conclusion:** [Final 1-sentence summary]
+
+**Important Rules:**
+- Use plenty of emojis to make it engaging
+- Use boxes (┌─┐ │ └─┘) to separate sections
+- Use **bold** for important terms
+- Use \`code\` for code snippets
+- Use bullet points (•) instead of hyphens (-)
+- Code blocks must use \`\`\`${langTag}\`\`\` (not other tags)`;
     }
 };
 
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v5.0 (Gemini + Redis Cache + Security Hardened)
+ * @desc Analyze code with KONKMENG-AI v5.1 | Groq Edition (Llama 3.3 70B + Redis Cache)
  */
 const CACHE_LOCK_TTL = 30; // 30 seconds lock
 const MAX_CODE_LENGTH = 50000; // 50KB max
@@ -1392,9 +1374,9 @@ const analyzeCode = async (req, res) => {
         });
     }
 
-    if (!GEMINI_API_KEY) {
+    if (!GROQ_API_KEY || !groq) {
         return res.status(500).json({ 
-            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ សូមពិនិត្យការកំណត់រចនាសម្ព័ន្ធ' : 'API Key not configured'
+            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ សូមពិនិត្យការកំណត់រចនាសម្ព័ន្ធ' : 'Groq API Key not configured'
         });
     }
 
@@ -1450,7 +1432,7 @@ const analyzeCode = async (req, res) => {
                     // If still no cache, proceed with API call
                 }
                 
-                console.log('⚠️  Cache MISS - Will call Gemini API');
+                console.log('⚠️  Cache MISS - Will call Groq API');
             } catch (cacheError) {
                 console.log('⚠️  Redis error:', cacheError.message);
             }
@@ -1458,91 +1440,54 @@ const analyzeCode = async (req, res) => {
             console.log('⚠️  Redis not connected - Skipping cache check');
         }
 
-        // Server-side security scan
-        const serverSideVulnerabilities = performSecurityScan(code);
-        let securityContext = '';
-        if (serverSideVulnerabilities.length > 0) {
-            securityContext = responseLang === 'km' 
-                ? `\n\n⚠️ ការស្កេនសុវត្ថិភាពរកឃើញបញ្ហា:\n${serverSideVulnerabilities.map(v => `- ${v.type}: ${v.message}`).join('\n')}`
-                : `\n\nSecurity scan found issues:\n${serverSideVulnerabilities.map(v => `- ${v.type}: ${v.message}`).join('\n')}`;
-        }
-
-        // Call Gemini API with model fallback and retry logic
+        // Call Groq API
         let analysis = null;
-        let usedModel = null;
         let lastError = null;
-        let quotaExceeded = false;
 
-        for (let i = 0; i < GEMINI_MODELS.length; i++) {
-            const modelName = GEMINI_MODELS[i];
+        try {
+            console.log(`🤖 Calling Groq API with model: ${GROQ_MODEL}`);
             
-            try {
-                console.log(`🤖 Trying Gemini model [${i + 1}/${GEMINI_MODELS.length}]: ${modelName}`);
-                const model = genAI.getGenerativeModel({ model: modelName });
-                
-                const prompt = responseLang === 'km' 
-                    ? `វិភាគកូដ ${language} នេះ:${securityContext}\n\n\`\`\`${language}\n${code}\n\`\`\``
-                    : `Analyze this ${language} code:${securityContext}\n\n\`\`\`${language}\n${code}\n\`\`\``;
+            const prompt = responseLang === 'km' 
+                ? `វិភាគកូដ ${language} នេះ:\n\n\`\`\`${language}\n${code}\n\`\`\``
+                : `Analyze this ${language} code:\n\n\`\`\`${language}\n${code}\n\`\`\``;
 
-                // Call with timeout
-                const result = await Promise.race([
-                    model.generateContent([
-                        { text: getSystemPrompt(responseLang) },
-                        { text: prompt }
-                    ]),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Gemini API timeout after 30s')), 30000)
-                    )
-                ]);
+            // Call Groq API with timeout
+            const completion = await Promise.race([
+                groq.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: getSystemPrompt(responseLang) },
+                        { role: 'user', content: prompt }
+                    ],
+                    model: GROQ_MODEL,
+                    temperature: 0.3,
+                    max_tokens: 4096
+                }),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Groq API timeout after 30s')), 30000)
+                )
+            ]);
 
-                const response = await result.response;
-                analysis = response.text();
-                usedModel = modelName;
-                
-                // Update success stats
-                modelUsageStats[modelName].success++;
-                
-                console.log(`✅ Success with model: ${modelName}`);
-                console.log(`📊 Model Stats: ${JSON.stringify(modelUsageStats[modelName])}`);
-                break;
-                
-            } catch (modelError) {
-                lastError = modelError;
-                
-                // Update failed stats
-                if (modelUsageStats[modelName]) {
-                    modelUsageStats[modelName].failed++;
-                }
-                
-                console.log(`❌ Model ${modelName} failed:`, modelError.message);
-                
-                // Check if it's a quota error
-                if (modelError.message && modelError.message.includes('429')) {
-                    quotaExceeded = true;
-                    console.log('⚠️  QUOTA EXCEEDED for model:', modelName);
-                    
-                    // Extract retry delay if available
-                    const retryMatch = modelError.message.match(/retry in ([\d.]+)s/);
-                    if (retryMatch) {
-                        const retryDelay = parseFloat(retryMatch[1]);
-                        console.log(`⏳ Suggested retry delay: ${retryDelay}s`);
-                    }
-                }
-                
-                // If this is the last model, throw error
-                if (i === GEMINI_MODELS.length - 1) {
-                    console.log('❌ All models exhausted');
-                    throw new Error(quotaExceeded ? 'QUOTA_EXCEEDED' : 'ALL_MODELS_FAILED');
-                }
-                
-                // Wait a bit before trying next model (rate limiting)
-                console.log('⏳ Waiting 1s before trying next model...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            analysis = completion.choices[0]?.message?.content;
+            
+            if (!analysis) {
+                throw new Error('Empty response from Groq API');
             }
-        }
-
-        if (!analysis) {
-            throw new Error('Failed to generate analysis');
+            
+            // Update success stats
+            groqUsageStats.success++;
+            groqUsageStats.totalTokens += (completion.usage?.total_tokens || 0);
+            groqUsageStats.lastUsed = new Date().toISOString();
+            
+            console.log(`✅ Success with Groq API`);
+            console.log(`📊 Tokens used: ${completion.usage?.total_tokens || 0}`);
+            console.log(`📊 Groq Stats: ${JSON.stringify(groqUsageStats)}`);
+            
+        } catch (groqError) {
+            lastError = groqError;
+            groqUsageStats.failed++;
+            
+            console.log(`❌ Groq API failed:`, groqError.message);
+            throw new Error('GROQ_API_FAILED');
         }
 
         // Save to Redis cache with 24-hour TTL and release lock
@@ -1600,17 +1545,13 @@ const analyzeCode = async (req, res) => {
             success: true,
             analysis,
             cached: false,
-            model: usedModel,
-            securityScan: serverSideVulnerabilities.length > 0 ? {
-                found: serverSideVulnerabilities.length,
-                issues: serverSideVulnerabilities
-            } : null,
+            model: GROQ_MODEL,
             message: responseLang === 'km' ? 'វិភាគជោគជ័យ' : 'Analysis successful'
         });
 
     } catch (error) {
         console.error('❌ Analysis error:', error.message);
-        console.log('📊 Current Model Usage Stats:', JSON.stringify(modelUsageStats, null, 2));
+        console.log('📊 Current Groq Stats:', JSON.stringify(groqUsageStats, null, 2));
         
         // Release lock on error
         if (isRedisConnected && redisClient) {
@@ -1622,39 +1563,16 @@ const analyzeCode = async (req, res) => {
             }
         }
         
-        // Handle quota exceeded error with clear Khmer message
-        if (error.message === 'QUOTA_EXCEEDED') {
-            const khmerError = `⚠️ ចំនួន API Credits ហួសកម្រិតហើយ!\n\n` +
-                `សូមរង់ចាំ ៥-១០ នាទី ឬប្រើ API Key ថ្មី។\n` +
-                `ប្រព័ន្ធនឹងព្យាយាមប្រើ Model ផ្សេងទៀតដោយស្វ័យប្រវត្តិ។\n\n` +
-                `💡 ដំបូន្មាន: ប្រើ Redis Cache ដើម្បីសន្សំ API Credits។`;
-            
-            const englishError = `⚠️ API Quota Exceeded!\n\n` +
-                `Please wait 5-10 minutes or use a new API key.\n` +
-                `The system will automatically try different models.\n\n` +
-                `💡 Tip: Use Redis Cache to save API credits.`;
-            
-            return res.status(429).json({
-                success: false,
-                error: responseLang === 'km' ? khmerError : englishError,
-                errorCode: 'QUOTA_EXCEEDED',
-                modelStats: modelUsageStats,
-                suggestion: responseLang === 'km' 
-                    ? 'សូមពិនិត្យ Google AI Studio: https://aistudio.google.com/apikey'
-                    : 'Check your quota at: https://aistudio.google.com/apikey'
-            });
-        }
-        
-        // Handle other errors
+        // Handle Groq API error with Khmer message
         const errorMsg = responseLang === 'km' 
-            ? 'ការវិភាគបរាជ័យ សូមព្យាយាមម្តងទៀត' 
-            : 'Analysis failed, please try again';
+            ? 'មានបញ្ហាបច្ចេកទេសជាមួយ Groq API សូមព្យាយាមម្តងទៀត' 
+            : 'Technical issue with Groq API, please try again';
         
         res.status(500).json({
             success: false,
             error: errorMsg,
             details: error.message,
-            modelStats: modelUsageStats
+            groqStats: groqUsageStats
         });
     }
 };
@@ -1696,10 +1614,9 @@ app.post('/api/analyze-code', analyzeCodeLimiter, analyzeCode);
 app.get('/api/model-stats', (req, res) => {
     res.json({
         success: true,
-        current: modelUsageStats,
-        history: statsHistory,
-        models: GEMINI_MODELS,
-        message: 'Model usage statistics'
+        stats: groqUsageStats,
+        model: GROQ_MODEL,
+        message: 'Groq API usage statistics'
     });
 });
 
@@ -1734,26 +1651,24 @@ const healthCheck = (req, res) => {
     
     res.json({ 
         status: '✅ KONKMENG is running',
-        message: 'Full-stack with Authentication + Redis Cache + Security Audit',
-        version: '5.0',
-        engine: 'Google Gemini (Multi-Model Fallback)',
-        apiKey: GEMINI_API_KEY ? '✅ Configured' : '❌ Missing',
+        message: 'Full-stack with Authentication + Redis Cache',
+        version: '5.1 | Groq Edition',
+        engine: 'Groq Llama 3.3 70B Versatile | Ultra-Fast Performance',
+        apiKey: GROQ_API_KEY ? '✅ Configured' : '❌ Missing',
         mongodb: mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected',
         redis: {
             status: isRedisConnected ? '✅ Connected' : '⚠️  Disconnected (Graceful Degradation)',
             url: redisUrl,
             caching: isRedisConnected ? 'Active (24h TTL)' : 'Disabled'
         },
-        geminiModels: {
-            available: GEMINI_MODELS,
-            stats: modelUsageStats
+        groqModel: {
+            name: GROQ_MODEL,
+            stats: groqUsageStats
         },
         features: {
             authentication: '✅ Enabled',
             caching: isRedisConnected ? '✅ Active (24h TTL)' : '⚠️  Disabled',
-            securityAudit: '✅ Advanced (SQL, XSS, Secrets)',
-            modelFallback: '✅ 3-tier rotation',
-            quotaHandling: '✅ Graceful with Khmer messages'
+            minimalistPrompt: '✅ Enabled (No security scans, no greetings)'
         },
         timestamp: new Date().toISOString()
     });
@@ -1779,12 +1694,16 @@ app.use((req, res, next) => {
 });
 
 // 404 handler for API routes (must be AFTER all API routes)
-app.use('/api/*', (req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'API endpoint not found',
-        path: req.path
-    });
+app.use((req, res, next) => {
+    // Only handle API routes that weren't matched
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({
+            success: false,
+            error: 'API endpoint not found',
+            path: req.path
+        });
+    }
+    next();
 });
 
 // ===== START SERVER =====
@@ -1792,26 +1711,24 @@ const startServer = () => {
     const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
     
     console.log('\n🚀 ============================================');
-    console.log(`🚀 KONKMENG v5.0 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 KONKMENG v5.1 | Groq Edition running on http://localhost:${PORT}`);
     console.log('🚀 ============================================\n');
     console.log('📋 AUTHENTICATION:');
     console.log('   • Signup: POST /api/auth/signup');
     console.log('   • Login: POST /api/auth/login');
     console.log('   • Profile: GET /api/auth/profile\n');
     console.log('📋 CODE ANALYSIS:');
-    console.log('   • POST /api/analyze-code (Gemini + Redis Cache)');
-    console.log('   • GET /api/model-stats (Model usage statistics)\n');
+    console.log('   • POST /api/analyze-code (Groq + Redis Cache)');
+    console.log('   • GET /api/model-stats (Groq usage statistics)\n');
     console.log('📋 INFRASTRUCTURE:');
     console.log('   • MongoDB:', mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌');
     console.log('   • Redis Cache:', isRedisConnected ? `Active ✅ (${redisUrl})` : `Inactive ⚠️  (${redisUrl})`);
-    console.log('   • Redis TTL: 24 hours (86400 seconds)');
-    console.log('   • Security Audit: Advanced ✅ (SQL, XSS, Secrets)\n');
-    console.log('📋 GEMINI MODELS (Optimized for 1,500 RPD):');
-    console.log('   • Primary [1/3]: gemini-1.5-flash-latest (1,500 RPD quota)');
-    console.log('   • Fallback [2/3]: gemini-1.5-pro-latest (higher quality)');
-    console.log('   • Last Resort [3/3]: gemini-1.0-pro-latest (stable)');
-    console.log('   • Retry Delay: 1 second between attempts');
-    console.log('   • Quota Handling: Graceful with Khmer messages ✅\n');
+    console.log('   • Redis TTL: 24 hours (86400 seconds)\n');
+    console.log('📋 GROQ MODEL:');
+    console.log('   • Model: llama-3.3-70b-versatile');
+    console.log('   • Context: 128K tokens');
+    console.log('   • Speed: Ultra-fast inference');
+    console.log('   • Languages: English + Khmer support ✅\n');
     console.log('✅ Ready! Server is waiting for requests...\n');
 };
 

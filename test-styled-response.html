@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KONKMENG AI - Styled Response Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title .emoji {
+            font-size: 1.3em;
+        }
+
+        .box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .good-points {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .improvements {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+
+        .suggestions {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .code-block pre {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .line-number {
+            color: #6c757d;
+            margin-right: 15px;
+            user-select: none;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        ul li:before {
+            content: "•";
+            position: absolute;
+            left: 10px;
+            color: #667eea;
+            font-size: 1.5em;
+            line-height: 1;
+        }
+
+        .conclusion {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .output-box {
+            background: #1e1e1e;
+            color: #4ec9b0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 5px;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 KONKMENG AI v5.1</h1>
+            <p>Groq Edition - Styled Response Demo</p>
+            <div style="margin-top: 15px;">
+                <span class="badge">Llama 3.3 70B</span>
+                <span class="badge">Redis Cache</span>
+                <span class="badge">Khmer Support</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <button class="test-button" onclick="testAPI()">🧪 Test API with Fibonacci Code</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">កំពុងវិភាគកូដ...</p>
+            </div>
+
+            <div id="response-container"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('response-container');
+            
+            loading.style.display = 'block';
+            container.innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/analyze-code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: `function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n-1) + fibonacci(n-2);
+}`,
+                        language: 'javascript',
+                        responseLang: 'km'
+                    })
+                });
+
+                const data = await response.json();
+                loading.style.display = 'none';
+
+                if (data.success) {
+                    displayStyledResponse(data.analysis, data.cached);
+                } else {
+                    container.innerHTML = `<div class="box improvements">❌ Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                container.innerHTML = `<div class="box improvements">❌ Connection Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayStyledResponse(analysis, cached) {
+            const container = document.getElementById('response-container');
+            
+            // Parse the markdown-style response
+            let html = analysis
+                .replace(/┌─+┐/g, '<div style="border-top: 2px solid #667eea; margin: 20px 0;"></div>')
+                .replace(/└─+┘/g, '<div style="border-bottom: 2px solid #667eea; margin: 20px 0;"></div>')
+                .replace(/│ (.*?) │/g, '<div class="section-title">$1</div>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/```javascript\n([\s\S]*?)```/g, '<div class="code-block"><pre>$1</pre></div>')
+                .replace(/```\n([\s\S]*?)```/g, '<div class="output-box"><pre>$1</pre></div>')
+                .replace(/`(.*?)`/g, '<code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; color: #e83e8c;">$1</code>')
+                .replace(/• (.*?)(?=\n|$)/g, '<li>$1</li>')
+                .replace(/✅ \*\*អ្វីដែលល្អ:\*\*/g, '<div class="box good-points"><strong>✅ អ្វីដែលល្អ:</strong>')
+                .replace(/⚠️ \*\*អ្វីដែលត្រូវកែ:\*\*/g, '</div><div class="box improvements"><strong>⚠️ អ្វីដែលត្រូវកែ:</strong>')
+                .replace(/💡 \*\*ដំបូន្មាន:\*\*/g, '</div><div class="box suggestions"><strong>💡 ដំបូន្មាន:</strong>')
+                .replace(/💬 \*\*សន្និដ្ឋាន:\*\* (.*?)(?=\n|$)/g, '<div class="conclusion">💬 <strong>សន្និដ្ឋាន:</strong> $1</div>')
+                .replace(/\n/g, '<br>');
+
+            // Add cache badge
+            if (cached) {
+                html = `<div class="box good-points">⚡ លទ្ធផលពី Cache - រហ័សភ្លាមៗ!</div>` + html;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            setTimeout(testAPI, 500);
+        });
+    </script>
+</body>
+</html>
