@@ -58,8 +58,12 @@ let isRedisConnected = false;
 
 async function setupRedis() {
     try {
+        // Explicitly use 127.0.0.1:6379 for local Redis
+        const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+        console.log('🔌 Attempting Redis connection to:', redisUrl);
+        
         redisClient = redis.createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379',
+            url: redisUrl,
             socket: {
                 reconnectStrategy: (retries) => {
                     if (retries > 3) {
@@ -77,7 +81,7 @@ async function setupRedis() {
         });
 
         redisClient.on('connect', () => {
-            console.log('✅ Redis connected successfully');
+            console.log('✅ Redis connected successfully to 127.0.0.1:6379');
             isRedisConnected = true;
         });
 
@@ -89,7 +93,7 @@ async function setupRedis() {
         await redisClient.connect();
     } catch (error) {
         console.log('⚠️  Redis connection failed:', error.message);
-        console.log('⚠️  Server will continue without caching');
+        console.log('⚠️  Server will continue without caching (Graceful Degradation)');
         isRedisConnected = false;
     }
 }
@@ -1143,12 +1147,19 @@ app.post('/api/auth/github', async (req, res) => {
 
 // ===== CODE ANALYSIS ROUTE =====
 
-// Gemini model fallback strategy
+// Gemini model fallback strategy - optimized for free tier
 const GEMINI_MODELS = [
-    'gemini-2.5-flash',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro'
+    'gemini-1.5-flash-latest',   // Primary: Latest 1.5 Flash
+    'gemini-1.5-pro-latest',     // Fallback: Latest 1.5 Pro
+    'gemini-1.0-pro-latest'      // Last resort: 1.0 Pro
 ];
+
+// Track model usage for monitoring
+let modelUsageStats = {
+    'gemini-1.5-flash-latest': { success: 0, failed: 0 },
+    'gemini-1.5-pro-latest': { success: 0, failed: 0 },
+    'gemini-1.0-pro-latest': { success: 0, failed: 0 }
+};
 
 /// ===== [SYSTEM IDENTITY: KONKMENG-AI v5.0 - GEMINI POWERED WITH SECURITY] =====
 /**
@@ -1251,7 +1262,7 @@ const analyzeCode = async (req, res) => {
 
     if (!GEMINI_API_KEY) {
         return res.status(500).json({ 
-            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured'
+            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ សូមពិនិត្យការកំណត់រចនាសម្ព័ន្ធ' : 'API Key not configured'
         });
     }
 
@@ -1260,33 +1271,45 @@ const analyzeCode = async (req, res) => {
         .update(`${code}:${language}:${responseLang}`)
         .digest('hex');
 
+    console.log('\n📥 ===== ANALYSIS REQUEST =====');
+    console.log('Language:', language);
+    console.log('Response Language:', responseLang);
+    console.log('Code length:', code.length);
+    console.log('Cache Key:', cacheKey.substring(0, 16) + '...');
+
     try {
         // Check Redis cache first
         if (isRedisConnected && redisClient) {
             try {
                 const cachedResult = await redisClient.get(cacheKey);
                 if (cachedResult) {
-                    console.log('✅ Cache HIT for key:', cacheKey.substring(0, 16) + '...');
+                    console.log('✅ Cache HIT - Returning cached result');
                     return res.json({
                         success: true,
                         analysis: cachedResult,
                         cached: true,
-                        message: responseLang === 'km' ? 'លទ្ធផលពី Cache' : 'Result from cache'
+                        message: responseLang === 'km' ? 'លទ្ធផលពី Cache (សន្សំ API Credits)' : 'Result from cache (API credits saved)'
                     });
                 }
-                console.log('⚠️  Cache MISS for key:', cacheKey.substring(0, 16) + '...');
+                console.log('⚠️  Cache MISS - Will call Gemini API');
             } catch (cacheError) {
                 console.log('⚠️  Redis read error:', cacheError.message);
             }
+        } else {
+            console.log('⚠️  Redis not connected - Skipping cache check');
         }
 
-        // Call Gemini API with model fallback
+        // Call Gemini API with model fallback and retry logic
         let analysis = null;
         let usedModel = null;
+        let lastError = null;
+        let quotaExceeded = false;
 
-        for (const modelName of GEMINI_MODELS) {
+        for (let i = 0; i < GEMINI_MODELS.length; i++) {
+            const modelName = GEMINI_MODELS[i];
+            
             try {
-                console.log(`🤖 Trying Gemini model: ${modelName}`);
+                console.log(`🤖 Trying Gemini model [${i + 1}/${GEMINI_MODELS.length}]: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
                 
                 const prompt = responseLang === 'km' 
@@ -1301,13 +1324,46 @@ const analyzeCode = async (req, res) => {
                 const response = await result.response;
                 analysis = response.text();
                 usedModel = modelName;
+                
+                // Update success stats
+                modelUsageStats[modelName].success++;
+                
                 console.log(`✅ Success with model: ${modelName}`);
+                console.log(`📊 Model Stats: ${JSON.stringify(modelUsageStats[modelName])}`);
                 break;
+                
             } catch (modelError) {
-                console.log(`❌ Model ${modelName} failed:`, modelError.message);
-                if (modelName === GEMINI_MODELS[GEMINI_MODELS.length - 1]) {
-                    throw new Error('All Gemini models failed');
+                lastError = modelError;
+                
+                // Update failed stats
+                if (modelUsageStats[modelName]) {
+                    modelUsageStats[modelName].failed++;
                 }
+                
+                console.log(`❌ Model ${modelName} failed:`, modelError.message);
+                
+                // Check if it's a quota error
+                if (modelError.message && modelError.message.includes('429')) {
+                    quotaExceeded = true;
+                    console.log('⚠️  QUOTA EXCEEDED for model:', modelName);
+                    
+                    // Extract retry delay if available
+                    const retryMatch = modelError.message.match(/retry in ([\d.]+)s/);
+                    if (retryMatch) {
+                        const retryDelay = parseFloat(retryMatch[1]);
+                        console.log(`⏳ Suggested retry delay: ${retryDelay}s`);
+                    }
+                }
+                
+                // If this is the last model, throw error
+                if (i === GEMINI_MODELS.length - 1) {
+                    console.log('❌ All models exhausted');
+                    throw new Error(quotaExceeded ? 'QUOTA_EXCEEDED' : 'ALL_MODELS_FAILED');
+                }
+                
+                // Wait a bit before trying next model (rate limiting)
+                console.log('⏳ Waiting 1s before trying next model...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
 
@@ -1348,6 +1404,8 @@ const analyzeCode = async (req, res) => {
             }
         }
 
+        console.log('✅ Analysis completed successfully\n');
+
         res.json({
             success: true,
             analysis,
@@ -1357,17 +1415,58 @@ const analyzeCode = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Analysis error:', error);
-        const errorMsg = responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed';
+        console.error('❌ Analysis error:', error.message);
+        console.log('📊 Current Model Usage Stats:', JSON.stringify(modelUsageStats, null, 2));
+        
+        // Handle quota exceeded error with clear Khmer message
+        if (error.message === 'QUOTA_EXCEEDED') {
+            const khmerError = `⚠️ ចំនួន API Credits ហួសកម្រិតហើយ!\n\n` +
+                `សូមរង់ចាំ ៥-១០ នាទី ឬប្រើ API Key ថ្មី។\n` +
+                `ប្រព័ន្ធនឹងព្យាយាមប្រើ Model ផ្សេងទៀតដោយស្វ័យប្រវត្តិ។\n\n` +
+                `💡 ដំបូន្មាន: ប្រើ Redis Cache ដើម្បីសន្សំ API Credits។`;
+            
+            const englishError = `⚠️ API Quota Exceeded!\n\n` +
+                `Please wait 5-10 minutes or use a new API key.\n` +
+                `The system will automatically try different models.\n\n` +
+                `💡 Tip: Use Redis Cache to save API credits.`;
+            
+            return res.status(429).json({
+                success: false,
+                error: responseLang === 'km' ? khmerError : englishError,
+                errorCode: 'QUOTA_EXCEEDED',
+                modelStats: modelUsageStats,
+                suggestion: responseLang === 'km' 
+                    ? 'សូមពិនិត្យ Google AI Studio: https://aistudio.google.com/apikey'
+                    : 'Check your quota at: https://aistudio.google.com/apikey'
+            });
+        }
+        
+        // Handle other errors
+        const errorMsg = responseLang === 'km' 
+            ? 'ការវិភាគបរាជ័យ សូមព្យាយាមម្តងទៀត' 
+            : 'Analysis failed, please try again';
+        
         res.status(500).json({
             success: false,
             error: errorMsg,
-            details: error.message
+            details: error.message,
+            modelStats: modelUsageStats
         });
     }
 };
 
 app.post('/api/analyze-code', analyzeCode);
+
+// ===== MODEL STATS ENDPOINT =====
+app.get('/api/model-stats', (req, res) => {
+    res.json({
+        success: true,
+        stats: modelUsageStats,
+        models: GEMINI_MODELS,
+        message: 'Model usage statistics'
+    });
+});
+
 // ===== DIAGNOSTIC ENDPOINT =====
 const debugUsers = async (req, res) => {
     try {
@@ -1395,18 +1494,30 @@ app.get('/api/debug/users', debugUsers);
 
 // ===== HEALTH CHECK =====
 const healthCheck = (req, res) => {
+    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+    
     res.json({ 
         status: '✅ KONKMENG is running',
         message: 'Full-stack with Authentication + Redis Cache + Security Audit',
         version: '5.0',
-        engine: 'Google Gemini 2.5 Flash',
+        engine: 'Google Gemini (Multi-Model Fallback)',
         apiKey: GEMINI_API_KEY ? '✅ Configured' : '❌ Missing',
         mongodb: mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected',
-        redis: isRedisConnected ? '✅ Connected' : '⚠️  Disconnected (Graceful Degradation)',
+        redis: {
+            status: isRedisConnected ? '✅ Connected' : '⚠️  Disconnected (Graceful Degradation)',
+            url: redisUrl,
+            caching: isRedisConnected ? 'Active (24h TTL)' : 'Disabled'
+        },
+        geminiModels: {
+            available: GEMINI_MODELS,
+            stats: modelUsageStats
+        },
         features: {
             authentication: '✅ Enabled',
             caching: isRedisConnected ? '✅ Active (24h TTL)' : '⚠️  Disabled',
-            securityAudit: '✅ Advanced (SQL, XSS, Secrets)'
+            securityAudit: '✅ Advanced (SQL, XSS, Secrets)',
+            modelFallback: '✅ 3-tier rotation',
+            quotaHandling: '✅ Graceful with Khmer messages'
         },
         timestamp: new Date().toISOString()
     });
@@ -1429,6 +1540,8 @@ app.get(/^\/(?!api\/).*/, spaCatchAll);
 
 // ===== START SERVER =====
 const startServer = () => {
+    const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+    
     console.log('\n🚀 ============================================');
     console.log(`🚀 KONKMENG v5.0 Server running on http://localhost:${PORT}`);
     console.log('🚀 ============================================\n');
@@ -1437,11 +1550,18 @@ const startServer = () => {
     console.log('   • Login: POST /api/auth/login');
     console.log('   • Profile: GET /api/auth/profile\n');
     console.log('📋 CODE ANALYSIS:');
-    console.log('   • POST /api/analyze-code (Gemini + Redis Cache)\n');
+    console.log('   • POST /api/analyze-code (Gemini + Redis Cache)');
+    console.log('   • GET /api/model-stats (Model usage statistics)\n');
     console.log('📋 INFRASTRUCTURE:');
     console.log('   • MongoDB:', mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌');
-    console.log('   • Redis Cache:', isRedisConnected ? 'Active ✅ (24h TTL)' : 'Inactive ⚠️  (Graceful Degradation)');
+    console.log('   • Redis Cache:', isRedisConnected ? `Active ✅ (${redisUrl})` : `Inactive ⚠️  (${redisUrl})`);
+    console.log('   • Redis TTL: 24 hours (86400 seconds)');
     console.log('   • Security Audit: Advanced ✅ (SQL, XSS, Secrets)\n');
+    console.log('📋 GEMINI MODELS:');
+    console.log('   • Primary: gemini-1.5-flash-latest');
+    console.log('   • Fallback 1: gemini-1.5-pro-latest');
+    console.log('   • Fallback 2: gemini-1.0-pro-latest');
+    console.log('   • Quota Handling: Graceful with Khmer messages ✅\n');
     console.log('✅ Ready! Server is waiting for requests...\n');
 };
 
