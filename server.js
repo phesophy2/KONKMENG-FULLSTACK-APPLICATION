@@ -1147,11 +1147,11 @@ app.post('/api/auth/github', async (req, res) => {
 
 // ===== CODE ANALYSIS ROUTE =====
 
-// Gemini model fallback strategy - optimized for free tier
+// Gemini model fallback strategy - optimized for 1,500 RPD quota
 const GEMINI_MODELS = [
-    'gemini-1.5-flash-latest',   // Primary: Latest 1.5 Flash
-    'gemini-1.5-pro-latest',     // Fallback: Latest 1.5 Pro
-    'gemini-1.0-pro-latest'      // Last resort: 1.0 Pro
+    'gemini-1.5-flash-latest',  // Primary: 1.5 Flash (1,500 RPD quota)
+    'gemini-1.5-pro-latest',    // Fallback: 1.5 Pro (higher quality)
+    'gemini-1.0-pro-latest'     // Last resort: 1.0 Pro (stable)
 ];
 
 // Track model usage for monitoring
@@ -1205,7 +1205,7 @@ const getSystemPrompt = (language) => {
 [ដំបូន្មានសម្រាប់កែលម្អ]
 
 ---
-Version: 5.0 | Engine: Gemini 2.5 Flash | Security: Advanced`;
+Version: 5.0 | Engine: Gemini 1.5 Flash | Security: Advanced`;
     } else {
         return `You are KONKMENG-AI v5.0, a code analysis and security expert for developers.
 
@@ -1242,7 +1242,7 @@ Version: 5.0 | Engine: Gemini 2.5 Flash | Security: Advanced`;
 [Suggestions for improvement]
 
 ---
-Version: 5.0 | Engine: Gemini 2.5 Flash | Security: Advanced`;
+Version: 5.0 | Engine: Gemini 1.5 Flash | Security: Advanced`;
     }
 };
 
@@ -1557,10 +1557,11 @@ const startServer = () => {
     console.log('   • Redis Cache:', isRedisConnected ? `Active ✅ (${redisUrl})` : `Inactive ⚠️  (${redisUrl})`);
     console.log('   • Redis TTL: 24 hours (86400 seconds)');
     console.log('   • Security Audit: Advanced ✅ (SQL, XSS, Secrets)\n');
-    console.log('📋 GEMINI MODELS:');
-    console.log('   • Primary: gemini-1.5-flash-latest');
-    console.log('   • Fallback 1: gemini-1.5-pro-latest');
-    console.log('   • Fallback 2: gemini-1.0-pro-latest');
+    console.log('📋 GEMINI MODELS (Optimized for 1,500 RPD):');
+    console.log('   • Primary [1/3]: gemini-1.5-flash-latest (1,500 RPD quota)');
+    console.log('   • Fallback [2/3]: gemini-1.5-pro-latest (higher quality)');
+    console.log('   • Last Resort [3/3]: gemini-1.0-pro-latest (stable)');
+    console.log('   • Retry Delay: 1 second between attempts');
     console.log('   • Quota Handling: Graceful with Khmer messages ✅\n');
     console.log('✅ Ready! Server is waiting for requests...\n');
 };
