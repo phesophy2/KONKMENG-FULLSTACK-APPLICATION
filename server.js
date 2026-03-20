@@ -6,14 +6,30 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const redis = require('redis');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== MIDDLEWARE =====
-app.use(cors());                    
+const corsOptions = {
+    origin: function (origin, callback) {
+        // អនុញ្ញាតគ្រប់ origin ទាំងអស់ (រួមទាំងទូរស័ព្ទ និងកុំព្យូទ័រផ្សេង)
+        callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+
+
 app.use(express.json());            
 app.use(express.static('public'));  
 
@@ -50,11 +66,57 @@ async function setupEmailTransport() {
 // Initialize email on startup
 setupEmailTransport();
 
+// ===== REDIS CONFIGURATION =====
+let redisClient;
+let isRedisConnected = false;
+
+async function setupRedis() {
+    try {
+        redisClient = redis.createClient({
+            url: process.env.REDIS_URL || 'redis://localhost:6379',
+            socket: {
+                reconnectStrategy: (retries) => {
+                    if (retries > 3) {
+                        console.log('⚠️  Redis: Max reconnection attempts reached');
+                        return false;
+                    }
+                    return Math.min(retries * 100, 3000);
+                }
+            }
+        });
+
+        redisClient.on('error', (err) => {
+            console.log('⚠️  Redis Client Error:', err.message);
+            isRedisConnected = false;
+        });
+
+        redisClient.on('connect', () => {
+            console.log('✅ Redis connected successfully');
+            isRedisConnected = true;
+        });
+
+        redisClient.on('ready', () => {
+            console.log('✅ Redis ready to use');
+            isRedisConnected = true;
+        });
+
+        await redisClient.connect();
+    } catch (error) {
+        console.log('⚠️  Redis connection failed:', error.message);
+        console.log('⚠️  Server will continue without caching');
+        isRedisConnected = false;
+    }
+}
+
+// Initialize Redis
+setupRedis();
+
 console.log('\n🔍 ===== KONKMENG AI SYSTEM =====');
-console.log('🔑 GROQ_API_KEY exists:', !!process.env.GROQ_API_KEY);
+console.log('🔑 GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
 console.log('🔑 MONGODB_URI exists:', !!process.env.MONGODB_URI);
 console.log('🔑 JWT_SECRET exists:', !!process.env.JWT_SECRET);
 console.log('📧 EMAIL_SERVICE: Ethereal Email (Test/Development)');
+console.log('💾 REDIS_CACHE: Initializing...');
 console.log('🔑 PORT:', PORT);
 console.log('================================\n');
 
@@ -62,8 +124,8 @@ console.log('================================\n');
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/konkmen')
 .then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    console.log('⚠️ Server will continue running without database - some features will be unavailable');
+    console.error('⚠️  MongoDB connection error:', err.message);
+    console.log('⚠️  Server will continue without database features');
 });
 
 // ===== USER SCHEMA & MODEL =====
@@ -601,8 +663,9 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         
         await user.save();
         
-        // Create reset link
-        const resetLink = `http://localhost:3000/?resetToken=${resetToken}`;
+        // Create reset link - Use environment URL or request origin
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+        const resetLink = `${baseUrl}/?resetToken=${resetToken}`;
         
         // Send email
         try {
@@ -1090,200 +1153,270 @@ app.post('/api/auth/github', async (req, res) => {
 
 // ===== CODE ANALYSIS ROUTE =====
 
-// GROQ API CONFIGURATION
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+// GOOGLE GEMINI API CONFIGURATION
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-const GROQ_MODELS = {
-    FAST: 'llama-3.1-8b-instant',
-    BALANCED: 'llama-3.3-70b-versatile',
-    POWERFUL: 'mixtral-8x7b-32768'
-};
-
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v16.0 - MODERN ARCHITECT] =====
-/**
- * Returns the system prompt for the given language.
- * 
- * @param {string} language - The language to generate the prompt for.
- * @returns {string} The system prompt.
- */
+// System prompts optimized for Khmer language
+// System prompts optimized for Khmer language with Security Audit
 const getSystemPrompt = (language) => {
     if (language === 'km') {
-        return `ឯងគឺជា KONKMENG-AI v16.0 ជាគ្រូជំនាញសម្រាប់និស្សិតឆ្នើមក្មេង។
+        return `អ្នកគឺជាគ្រូបង្រៀនសរសេរកម្មវិធីជំនាញខ្ពស់ដែលឆ្លើយតែជាភាសាខ្មែរប្រើប្រាស់ពាក្យសាមញ្ញ និងងាយយល់។
 
-# វិធានការដោះស្រាយការនិយាយជាន់គ្នា (Anti-Repetition Rules):
-១. **Natural Spacing**: រាល់ការបញ្ចប់មួយប្រយោគ ត្រូវ "ចុះបន្ទាត់ថ្មី" ឬប្រើ "Bullet points" ជាដាច់ខាត ដើម្បីការពារកុំឱ្យអក្សរខ្មែរនៅជាប់គ្នាពិបាកអាន។
-២. **Linguistic Variance**: ហាមប្រើពាក្យដដែលៗក្នុងប្រយោគបន្តបន្ទាប់គ្នា។ បើប្រើពាក្យ "បង្កើត" ហើយ បន្ទាត់បន្ទាប់ត្រូវប្រើពាក្យ "កំណត់" ឬ "រៀបចំ" ជំនួសវិញ។
-៣. **One-Sentence Flow**: ឆ្លើយតបមួយប្រយោគៗដាច់ពីគ្នា (Separate Tokens) មិនឱ្យសរសេរវែងអន្លាយជាប់គ្នាជាផ្ទាំងនោះទេ។
+🎯 **គោលការណ៍សំខាន់:**
+- ឆ្លើយជាភាសាខ្មែរ ១០០% ប្រើពាក្យធម្មតាដែលមនុស្សខ្មែរប្រើប្រចាំថ្ងៃ
+- ពន្យល់ច្បាស់លាស់ សាមញ្ញ និងងាយយល់សម្រាប់អ្នកចាប់ផ្តើម
+- ប្រើឧទាហរណ៍ជាក់ស្តែងនៅពេលចាំបាច់
+- កុំប្រើពាក្យបច្ចេកទេសច្រើនពេក ប្រសិនបើប្រើត្រូវពន្យល់ជាភាសាសាមញ្ញ
+- ត្រូវពិនិត្យសុវត្ថិភាពកូដជានិច្ច
 
-# គោលការណ៍បង្រៀន (Updated):
-១. **Modern Priority** - ប្រើ Arrow Functions () => {} ជាចម្បង។
-២. **Complete Flow** - ពន្យល់គ្រប់បន្ទាត់ "ដោយមិនប្រើឃ្លាច្រំដែល"។
-៣. **Mentor Vibe** - ប្រើ Khmerlish Gen Z ហៅបងថា "Master KoKo"។
-៤. **Verb Variety** - ប្រើពាក្យខុសផ្សេងៗក្នុងបន្ទាត់បន្តបន្ទាប់: "បង្កើត" → "ត្រង់ចំណុច" → "កំហុស" → "បង្កប់" → "រៀបចំ" ជំនួសវិញ។
+📋 **ទម្រង់ចម្លើយ:**
 
-📋 **ទម្រង់ឆ្លើយតប (Structure with Spacing):**
-🚀 **VIBE:** [ឃ្លាគ្រូជំនាញដល់បង]
+📝 **កូដដែលត្រូវពិនិត្យ:**
+*បន្ទាត់ទី [លេខ]: [បង្ហាញកូដដើម]
 
-📝 **AUDIT:** - [បញ្ហាទី១...]
-- [បញ្ហាទី២...]
+🔧 **បញ្ហាដែលរកឃើញ:**
+- [ពន្យល់បញ្ហាជាភាសាខ្មែរសាមញ្ញ]
 
-✅ **FIX:**
-\`\`\`${language}
-[Code]
+🔒 **ការត្រួតពិនិត្យសុវត្ថិភាព:**
+- **SQL Injection:** [ពិនិត្យមើលថាតើមានហានិភ័យ SQL Injection ឬទេ]
+- **XSS (Cross-Site Scripting):** [ពិនិត្យមើលថាតើមានហានិភ័យ XSS ឬទេ]
+- **ពាក្យសម្ងាត់ដាក់ក្នុងកូដ:** [ពិនិត្យមើលថាតើមាន API keys, passwords ក្នុងកូដឬទេ]
+- **ចំណុចសុវត្ថិភាពផ្សេងៗ:** [បញ្ហាសុវត្ថិភាពផ្សេងទៀត]
+- **ពិន្ទុសុវត្ថិភាព:** [ពិន្ទុ]/១០ ([ពន្យល់ហេតុផល])
+
+✅ **កូដដែលបានកែប្រែ:**
+\`\`\`[language]
+[កូដថ្មីដែលត្រឹមត្រូវ និងមានសុវត្ថិភាព]
 \`\`\`
 
-📖 **LINE-BY-LINE (ដាច់ដោយឡែកពីគ្នា):**
-* បន្ទាត់ [N]: [ពន្យល់ឱ្យខ្លី ខ្លឹម និងមិនជាន់ពាក្យបន្ទាត់ផ្សេង]\n
-* បន្ទាត់ [N+1]: [ប្អូនគួរកែអត្ថន័យបន្ត...]\n
-* បន្ទាត់ [N+2]: [កំហុសនៅទីនេះគឺ...]\n
-* បន្ទាត់ [N+3]: [ត្រង់ចំណុចនេះខុស...]\n
+📖 **ការពន្យល់លម្អិត:**
+*បន្ទាត់ទី [លេខ]: [ពន្យល់ជាភាសាខ្មែរងាយយល់ថាកូដនេះធ្វើអ្វី និងហេតុអ្វីត្រូវកែ]
 
-> **💡 SENIOR TIP:** [តិចនិកសម្រាប់បង]
+💡 **ចំណេះដឹងបន្ថែម:**
+[ផ្តល់ព័ត៌មានបន្ថែមដែលមានប្រយោជន៍ជាភាសាខ្មែរ]`;
+    } else {
+        return `You are an expert programming teacher providing clear, simple explanations in English.
 
----
-Status: v16.0 | Mode: Modern Architect`;
+🎯 **Key Principles:**
+- Respond 100% in English using simple, everyday language
+- Provide clear, concise explanations suitable for beginners
+- Use practical examples when necessary
+- Avoid excessive technical jargon; if used, explain in simple terms
+- Always perform security audits on code
+
+📋 **RESPONSE FORMAT:**
+
+📝 **Code to Review:**
+*Line [number]: [show original code]
+
+🔧 **Issues Found:**
+- [brief explanation in simple English]
+
+🔒 **Security Audit:**
+- **SQL Injection:** [check for SQL injection vulnerabilities]
+- **XSS (Cross-Site Scripting):** [check for XSS vulnerabilities]
+- **Hardcoded Secrets:** [check for API keys, passwords, tokens in code]
+- **Other Security Issues:** [any other security concerns]
+- **Security Score:** [score]/10 ([brief explanation])
+
+✅ **Fixed Code:**
+\`\`\`[language]
+[corrected and secure code]
+\`\`\`
+
+📖 **Detailed Explanation:**
+*Line [number]: [explain in simple English what this code does and why it was changed]
+
+💡 **Additional Tips:**
+[provide helpful additional information in English]`;
     }
-    // ... rest of the code remains the same ...
-};
+}
 
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v16.0 Modern Architect Engine
+ * @desc Analyze code with Google Gemini AI
  */
-const analyzeCode = async (req, res) => {
-    const { code, language, responseLang = 'en' } = req.body;
-    const masterName = req.user?.name || "លោកម្ចាស់";
-    
-    if (!code) {
-        return res.status(400).json({ 
-            error: responseLang === 'km' ? `អត់ឃើញកូដផង ${masterName}! បញ្ជូនមកអូនឆែកឱ្យភ្លាម!` : `No code found, Master ${masterName}!`
-        });
-    }
-
-    if (!GROQ_API_KEY) {
-        return res.status(500).json({ 
-            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured'
-        });
-    }
-
-    // Set up SSE headers for streaming
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
-
-    let fullResponse = '';
-    let streamEnded = false;
-
+app.post('/api/analyze-code', async (req, res) => {
     try {
-        const response = await axios.post(GROQ_API_URL, {
-            model: "llama-3.3-70b-versatile",
-            messages: [
-                { role: 'system', content: getSystemPrompt(responseLang) },
-                { 
-                    role: 'user', 
-                    content: responseLang === 'km' 
-                        ? `វិភាគ ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``
-                        : `Analyze ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``
-                }
-            ],
-            stream: true,
-            temperature: 0.5,
-            frequency_penalty: 0,
-            presence_penalty: 0,
-            max_tokens: 1000
-        }, {
-            headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
-            responseType: 'stream',
-            timeout: 30000
-        });
+        const { code, language, responseLang = 'en' } = req.body;
+        
+        console.log('\n📥 ===== ANALYSIS REQUEST =====');
+        console.log('Language:', language);
+        console.log('Response Language:', responseLang);
+        console.log('Code length:', code?.length || 0);
 
-        response.data.on('data', chunk => {
-            if (streamEnded) return;
-            
-            const lines = chunk.toString().split('\n').filter(line => line.trim() !== '');
-            for (const line of lines) {
-                const message = line.replace(/^data: /, '');
-                if (message === '[DONE]') {
-                    streamEnded = true;
-                    res.write('data: [DONE]\n\n');
+        // Validation
+        if (!code) {
+            return res.status(400).json({ 
+                error: responseLang === 'km' ? 'សូមបញ្ចូលកូដ' : 'Please enter code'
+            });
+        }
+
+        if (!GEMINI_API_KEY || !genAI) {
+            return res.status(500).json({ 
+                error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured'
+            });
+        }
+
+        // ===== REDIS CACHING =====
+        // Create cache key from code + language + responseLang
+        const cacheKey = crypto
+            .createHash('sha256')
+            .update(`${code}:${language}:${responseLang}`)
+            .digest('hex');
+
+        // Check Redis cache first
+        if (isRedisConnected && redisClient) {
+            try {
+                const cachedResult = await redisClient.get(`analysis:${cacheKey}`);
+                if (cachedResult) {
+                    console.log('✅ Cache HIT - Returning cached result');
+                    const parsed = JSON.parse(cachedResult);
+                    return res.json({
+                        ...parsed,
+                        cached: true,
+                        cacheKey: cacheKey.substring(0, 8) + '...'
+                    });
+                }
+                console.log('⚠️  Cache MISS - Calling Gemini API');
+            } catch (cacheError) {
+                console.log('⚠️  Cache read error:', cacheError.message);
+            }
+        }
+
+        // Try Gemini models in order (trying paid tier models which might work)
+        const modelsToTry = [
+            { name: 'gemini-2.5-flash', type: 'Fast' },
+            { name: 'gemini-2.0-flash-lite-001', type: 'Lite' },
+            { name: 'gemini-2.0-flash', type: 'Standard' }
+        ];
+
+        let lastError = null;
+        let successResponse = null;
+
+        for (const modelInfo of modelsToTry) {
+            try {
+                console.log(`🤔 Trying ${modelInfo.name}...`);
+
+                const model = genAI.getGenerativeModel({ 
+                    model: modelInfo.name,
+                    generationConfig: {
+                        temperature: 0.3,
+                        topP: 0.85,
+                        topK: 40,
+                        maxOutputTokens: 2048,
+                    }
+                });
+
+                const systemPrompt = getSystemPrompt(responseLang);
+                
+                const userPrompt = responseLang === 'km' 
+                    ? `ពន្យល់កូដ ${language} នេះជាភាសាខ្មែរសាមញ្ញ និងងាយយល់ ហើយត្រូវពិនិត្យសុវត្ថិភាពផងដែរ៖
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+សូមឆ្លើយតាមទម្រង់ដែលបានកំណត់ ហើយប្រើតែភាសាខ្មែរប៉ុណ្ណោះ។ ត្រូវរួមបញ្ចូលផ្នែក "ការត្រួតពិនិត្យសុវត្ថិភាព" ជាមួយពិន្ទុសុវត្ថិភាព។`
+                    : `Explain this ${language} code in simple English and perform a security audit:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Please follow the response format and use only English. Must include "Security Audit" section with security score.`;
+
+                const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+                
+                const result = await model.generateContent(fullPrompt);
+                const response = await result.response;
+                const text = response.text();
+
+                if (text) {
+                    console.log(`✅ Success with ${modelInfo.name}`);
+                    successResponse = text;
                     
-                    // Save to history after stream completes
-                    if (fullResponse && req.headers.authorization) {
-                        const token = req.headers.authorization.split(' ')[1];
-                        if (token) {
-                            (async () => {
-                                try {
-                                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-                                    await User.findByIdAndUpdate(decoded.id, {
-                                        $push: {
-                                            analysisHistory: { 
-                                                code, 
-                                                language, 
-                                                analysis: fullResponse, 
-                                                createdAt: new Date() 
-                                            }
-                                        }
-                                    });
-                                } catch (err) { 
-                                    console.log('⚠️ History log failed'); 
+                    // Save to user history if authenticated
+                    const authHeader = req.headers['authorization'];
+                    const token = authHeader && authHeader.split(' ')[1];
+                    
+                    if (token) {
+                        try {
+                            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                            await User.findByIdAndUpdate(decoded.id, {
+                                $push: {
+                                    analysisHistory: {
+                                        code,
+                                        language,
+                                        analysis: successResponse,
+                                        createdAt: new Date()
+                                    }
                                 }
-                            })();
+                            });
+                            console.log('✅ Analysis saved to user history');
+                        } catch (err) {
+                            console.log('⚠️ Could not save to history:', err.message);
                         }
                     }
                     
-                    return res.end();
+                    break;
                 }
-                
+
+            } catch (error) {
+                console.log(`❌ ${modelInfo.name} failed:`, error.message);
+                lastError = error;
+            }
+        }
+
+        if (successResponse) {
+            const responseData = {
+                success: true,
+                analysis: successResponse,
+                responseLanguage: responseLang,
+                status: responseLang === 'km' ? 'វិភាគរួចរាល់' : 'Analysis complete',
+                cached: false
+            };
+
+            // ===== SAVE TO REDIS CACHE =====
+            if (isRedisConnected && redisClient) {
                 try {
-                    const parsed = JSON.parse(message);
-                    const content = parsed.choices[0]?.delta?.content;
-                    if (content) {
-                        // Khmer polish: replace newlines with <br/> for better display
-                        const polishedContent = responseLang === 'km' 
-                            ? content.replace(/\n/g, '<br/>')
-                            : content;
-                        
-                        fullResponse += content;
-                        res.write(`data: ${JSON.stringify({ content: polishedContent })}\n\n`);
-                    }
-                } catch (e) { 
-                    // Ignore parse errors for non-json chunks
+                    // Cache for 24 hours (86400 seconds)
+                    await redisClient.setEx(
+                        `analysis:${cacheKey}`,
+                        86400,
+                        JSON.stringify(responseData)
+                    );
+                    console.log('✅ Result cached for 24 hours');
+                } catch (cacheError) {
+                    console.log('⚠️  Cache write error:', cacheError.message);
                 }
             }
-        });
 
-        response.data.on('error', (error) => {
-            if (!streamEnded) {
-                streamEnded = true;
-                res.write(`data: ${JSON.stringify({ error: 'Stream error occurred' })}\n\n`);
-                res.end();
-            }
-        });
+            return res.json(responseData);
+        }
 
-        response.data.on('end', () => {
-            if (!streamEnded) {
-                streamEnded = true;
-                res.write('data: [DONE]\n\n');
-                res.end();
-            }
-        });
+        throw lastError || new Error('All models failed');
 
     } catch (error) {
-        if (!streamEnded) {
-            streamEnded = true;
-            const errorMsg = responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed';
-            res.write(`data: ${JSON.stringify({ error: errorMsg, details: error.message })}\n\n`);
-            res.end();
-        }
+        console.error('\n❌ ANALYSIS ERROR:', error.message);
+        
+        const responseLang = req.body?.responseLang || 'en';
+        
+        res.status(500).json({
+            error: responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed',
+            details: error.message,
+            solution: responseLang === 'km' ? 'សូមព្យាយាមម្តងទៀត' : 'Please try again'
+        });
     }
-};
+});
 
-app.post('/api/analyze-code', analyzeCode);
 // ===== DIAGNOSTIC ENDPOINT =====
-const debugUsers = async (req, res) => {
+/**
+ * @route GET /api/debug/users
+ * @desc Get all users in database (FOR TESTING ONLY)
+ */
+app.get('/api/debug/users', async (req, res) => {
     try {
         const users = await User.find().select('-password');
         res.json({
@@ -1303,39 +1436,23 @@ const debugUsers = async (req, res) => {
             error: error.message
         });
     }
-};
-
-app.get('/api/debug/users', debugUsers);
+});
 
 // ===== HEALTH CHECK =====
-const healthCheck = (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ 
         status: '✅ KONKMENG is running',
         message: 'Full-stack with Authentication',
-        version: '3.0 (with Auth)',
-        apiKey: GROQ_API_KEY ? '✅ Configured' : '❌ Missing',
+        version: '5.0 (with Gemini AI + Redis Cache + Security Audit)',
+        apiKey: GEMINI_API_KEY ? '✅ Configured' : '❌ Missing',
         mongodb: mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected',
+        redis: isRedisConnected ? '✅ Connected' : '❌ Disconnected',
         timestamp: new Date().toISOString()
     });
-};
-
-app.get('/api/health', healthCheck);
-
-// ===== SPA CATCH-ALL ROUTE =====
-const spaCatchAll = (req, res) => {
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({
-            success: false,
-            error: 'API endpoint not found'
-        });
-    }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-};
-
-app.get('/*', spaCatchAll);
+});
 
 // ===== START SERVER =====
-const startServer = () => {
+app.listen(PORT, () => {
     console.log('\n🚀 ============================================');
     console.log(`🚀 KONKMENG Server running on http://localhost:${PORT}`);
     console.log('🚀 ============================================\n');
@@ -1349,6 +1466,4 @@ const startServer = () => {
     console.log('   • MongoDB:', mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌');
     console.log('   • Users collection: ready\n');
     console.log('✅ Ready! Server is waiting for requests...\n');
-};
-
-app.listen(PORT, startServer);
+});
