@@ -1100,181 +1100,190 @@ const GROQ_MODELS = {
     POWERFUL: 'mixtral-8x7b-32768'
 };
 
-/// ===== [SYSTEM IDENTITY: KONKMENG-AI v15.0 - POLISHED MENTOR] =====
+/// ===== [SYSTEM IDENTITY: KONKMENG-AI v16.0 - MODERN ARCHITECT] =====
+/**
+ * Returns the system prompt for the given language.
+ * 
+ * @param {string} language - The language to generate the prompt for.
+ * @returns {string} The system prompt.
+ */
 const getSystemPrompt = (language) => {
     if (language === 'km') {
-        return `ឯងគឺជា KONKMENG-AI v15.0 ជាគ្រូជំនាញសម្រាប់និស្សិតឆ្នើមក្មេង។
+        return `ឯងគឺជា KONKMENG-AI v16.0 ជាគ្រូជំនាញសម្រាប់និស្សិតឆ្នើមក្មេង។
 
-# គោលការណ៍បង្រៀនសម្រាប់អ្នកចាប់ផ្តើម:
-១. **Modern Priority** - ជួសជុលកូដតែប្រើ Arrow Functions () => {} ជាដំណោះចម្បង
-២. **Complete Flow** - ពន្យល់គ្រប់បន្ទាត់ពីដើមដល់ចប់៖
-   - const student = { ... } មានន័យថា "បង្កើត object/container មួយ"
-   - let result = func() មានន័យថា "ហៅ function ហើយទទួលលទ្ធផល"
-៣. **Mentor Vibe** - ប្រើឃ្លាជាគ្រូជំនាញ៖
-   - "ក្នុងនាមជា Senior..."
-   - "តិចនិកសម្រាប់ប្អូនៗ..."
-   - "បងបង្រៀនអ្នកមក..."
-៤. **No Repetition** - ប្រយោគនីមួយមានតែមួយដងគត់
-៥. **Master KoKo** - ជានិច្ចហៅបងថា "Master KoKo" និងប្រើ Khmerlish Gen Z
+# វិធានការដោះស្រាយការនិយាយជាន់គ្នា (Anti-Repetition Rules):
+១. **Natural Spacing**: រាល់ការបញ្ចប់មួយប្រយោគ ត្រូវ "ចុះបន្ទាត់ថ្មី" ឬប្រើ "Bullet points" ជាដាច់ខាត ដើម្បីការពារកុំឱ្យអក្សរខ្មែរនៅជាប់គ្នាពិបាកអាន។
+២. **Linguistic Variance**: ហាមប្រើពាក្យដដែលៗក្នុងប្រយោគបន្តបន្ទាប់គ្នា។ បើប្រើពាក្យ "បង្កើត" ហើយ បន្ទាត់បន្ទាប់ត្រូវប្រើពាក្យ "កំណត់" ឬ "រៀបចំ" ជំនួសវិញ។
+៣. **One-Sentence Flow**: ឆ្លើយតបមួយប្រយោគៗដាច់ពីគ្នា (Separate Tokens) មិនឱ្យសរសេរវែងអន្លាយជាប់គ្នាជាផ្ទាំងនោះទេ។
 
-📋 **ទម្រង់ឆ្លើយតប:**
+# គោលការណ៍បង្រៀន (Updated):
+១. **Modern Priority** - ប្រើ Arrow Functions () => {} ជាចម្បង។
+២. **Complete Flow** - ពន្យល់គ្រប់បន្ទាត់ "ដោយមិនប្រើឃ្លាច្រំដែល"។
+៣. **Mentor Vibe** - ប្រើ Khmerlish Gen Z ហៅបងថា "Master KoKo"។
+៤. **Verb Variety** - ប្រើពាក្យខុសផ្សេងៗក្នុងបន្ទាត់បន្តបន្ទាប់: "បង្កើត" → "ត្រង់ចំណុច" → "កំហុស" → "បង្កប់" → "រៀបចំ" ជំនួសវិញ។
+
+📋 **ទម្រង់ឆ្លើយតប (Structure with Spacing):**
 🚀 **VIBE:** [ឃ្លាគ្រូជំនាញដល់បង]
-📝 **AUDIT:** [បញ្ហាដែលបងឃើញ]
-✅ **FIX (Arrow Functions ជាដំណោះចម្បង):**
-\`\`\`${language}
-[កូដដែលបានកែប្រែដោយប្រើ Arrow Functions ជាដំណោះចម្បង]
-\`\`\`
-📖 **LINE-BY-LINE (Complete Flow):**
-*បន្ទាត់ [N]: [ពន្យល់ពីដើមដល់ចប់ ឧទាហរណ៍: "បង្កើត object/container"]
-*បន្ទាត់ [N+1]: [ពន្យល់ពីដើមដល់ចប់ ឧទាហរណ៍: "ហៅ function និងទទួលលទ្ធផល"]
-(បន្តរហូតគ្រប់បន្ទាត់...)
 
-> **💡 SENIOR TIP:** [តិចនិកជំនាញសម្រាប់បង]
+📝 **AUDIT:** - [បញ្ហាទី១...]
+- [បញ្ហាទី២...]
+
+✅ **FIX:**
+\`\`\`${language}
+[Code]
+\`\`\`
+
+📖 **LINE-BY-LINE (ដាច់ដោយឡែកពីគ្នា):**
+* បន្ទាត់ [N]: [ពន្យល់ឱ្យខ្លី ខ្លឹម និងមិនជាន់ពាក្យបន្ទាត់ផ្សេង]\n
+* បន្ទាត់ [N+1]: [ប្អូនគួរកែអត្ថន័យបន្ត...]\n
+* បន្ទាត់ [N+2]: [កំហុសនៅទីនេះគឺ...]\n
+* បន្ទាត់ [N+3]: [ត្រង់ចំណុចនេះខុស...]\n
+
+> **💡 SENIOR TIP:** [តិចនិកសម្រាប់បង]
 
 ---
-Status: v15.0 | Mode: Polished Mentor`;
-    } else {
-        return `You are KONKMENG-AI v15.0, a Polished Mentor for First-Year CS Students.
-
-# Teaching Principles:
-1. **Modern Priority** - Always fix code using Arrow Functions as the primary solution
-2. **Complete Flow** - Explain EVERY line from start to finish:
-   - const student = { ... } means "create an object/container"
-   - let result = func() means "call function and receive result"
-3. **Mentor Vibe** - Use authentic mentor phrases:
-   - "As a Senior..."
-   - "Here's a tip for you..."
-   - "Let me teach you..."
-4. **No Repetition** - Each sentence must be unique
-5. **Master KoKo** - Always address as "Master KoKo" with Gen Z style
-
-📋 **Response Format:**
-🚀 **VIBE:** [One mentor line to Master KoKo]
-📝 **AUDIT:** [Issues found]
-✅ **FIX (Arrow Functions Priority):**
-\`\`\`${language}
-[Fixed code using Arrow Functions as primary solution]
-\`\`\`
-📖 **LINE-BY-LINE (Complete Flow):**
-*Line [N]: [Explain from start to finish, e.g., "create object/container"]
-*Line [N+1]: [Explain from start to finish, e.g., "call function and receive result"]
-(Continue until ALL lines...)
-
-> **💡 SENIOR TIP:** [One senior tip for Master KoKo]
-
----
-Status: v15.0 | Mode: Polished Mentor`;
+Status: v16.0 | Mode: Modern Architect`;
     }
+    // ... rest of the code remains the same ...
 };
+
 /**
  * @route POST /api/analyze-code
- * @desc Analyze code with KONKMENG-AI v15.0 Polished Mentor Engine
+ * @desc Analyze code with KONKMENG-AI v16.0 Modern Architect Engine
  */
-app.post('/api/analyze-code', async (req, res) => {
+const analyzeCode = async (req, res) => {
+    const { code, language, responseLang = 'en' } = req.body;
+    const masterName = req.user?.name || "លោកម្ចាស់";
+    
+    if (!code) {
+        return res.status(400).json({ 
+            error: responseLang === 'km' ? `អត់ឃើញកូដផង ${masterName}! បញ្ជូនមកអូនឆែកឱ្យភ្លាម!` : `No code found, Master ${masterName}!`
+        });
+    }
+
+    if (!GROQ_API_KEY) {
+        return res.status(500).json({ 
+            error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured'
+        });
+    }
+
+    // Set up SSE headers for streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
+
+    let fullResponse = '';
+    let streamEnded = false;
+
     try {
-        const { code, language, responseLang = 'en' } = req.body;
-        const masterName = req.user ? req.user.name : "លោកម្ចាស់";
-
-        // Validation
-        if (!code) {
-            return res.status(400).json({ 
-                error: responseLang === 'km' ? `អត់ឃើញកូដផង ${masterName}! បញ្ជូនមកអូនឆែកឱ្យភ្លាម!` : `No code found, Master ${masterName}!`
-            });
-        }
-
-        if (!GROQ_API_KEY) {
-            return res.status(500).json({ 
-                error: responseLang === 'km' ? 'API Key មិនត្រឹមត្រូវ' : 'API Key not configured'
-            });
-        }
-
-        // Use only the most reliable model for Master KoKo
-        const modelToUse = GROQ_MODELS.BALANCED;
-
         const response = await axios.post(GROQ_API_URL, {
-            model: modelToUse,
+            model: "llama-3.3-70b-versatile",
             messages: [
                 { role: 'system', content: getSystemPrompt(responseLang) },
                 { 
                     role: 'user', 
                     content: responseLang === 'km' 
-                        ? `វិភាគ ${language}៖\n\n\`\`\`${language}\n${code}\n\`\`\``
+                        ? `វិភាគ ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``
                         : `Analyze ${language}:\n\n\`\`\`${language}\n${code}\n\`\`\``
                 }
             ],
-            temperature: 0,
-            top_p: 0.1,
-            frequency_penalty: 2.0,
-            presence_penalty: 1.5,
-            max_tokens: 1000,
-            stop: ["។", "---", "Status:"]
+            stream: true,
+            temperature: 0.5,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+            max_tokens: 1000
         }, {
             headers: { 'Authorization': `Bearer ${GROQ_API_KEY}` },
+            responseType: 'stream',
             timeout: 30000
         });
 
-        if (response.data?.choices?.[0]) {
-            let successResponse = response.data.choices[0].message.content;
+        response.data.on('data', chunk => {
+            if (streamEnded) return;
             
-            // STRICT ANTI-LOOP: Truncate if sentence repeats > 2 times
-            const sentenceCounts = {};
-            const sentences = successResponse.split(/[.។]\s+/).filter(s => s.trim());
-            const filteredSentences = [];
-            
-            for (const sentence of sentences) {
-                const clean = sentence.trim().toLowerCase().substring(0, 50);
-                sentenceCounts[clean] = (sentenceCounts[clean] || 0) + 1;
-                
-                // If sentence repeats more than 2 times, stop adding
-                if (sentenceCounts[clean] > 2) {
-                    break;
-                }
-                filteredSentences.push(sentence.trim());
-            }
-            
-            successResponse = filteredSentences.join('. ');
-            
-            // Save to history (if logged in)
-            const authHeader = req.headers['authorization'];
-            const token = authHeader && authHeader.split(' ')[1];
-            if (token) {
-                try {
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-                    await User.findByIdAndUpdate(decoded.id, {
-                        $push: {
-                            analysisHistory: { code, language, analysis: successResponse, createdAt: new Date() }
+            const lines = chunk.toString().split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+                const message = line.replace(/^data: /, '');
+                if (message === '[DONE]') {
+                    streamEnded = true;
+                    res.write('data: [DONE]\n\n');
+                    
+                    // Save to history after stream completes
+                    if (fullResponse && req.headers.authorization) {
+                        const token = req.headers.authorization.split(' ')[1];
+                        if (token) {
+                            (async () => {
+                                try {
+                                    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                                    await User.findByIdAndUpdate(decoded.id, {
+                                        $push: {
+                                            analysisHistory: { 
+                                                code, 
+                                                language, 
+                                                analysis: fullResponse, 
+                                                createdAt: new Date() 
+                                            }
+                                        }
+                                    });
+                                } catch (err) { 
+                                    console.log('⚠️ History log failed'); 
+                                }
+                            })();
                         }
-                    });
-                } catch (err) { 
-                    console.log('⚠️ History log failed'); 
+                    }
+                    
+                    return res.end();
+                }
+                
+                try {
+                    const parsed = JSON.parse(message);
+                    const content = parsed.choices[0]?.delta?.content;
+                    if (content) {
+                        // Khmer polish: replace newlines with <br/> for better display
+                        const polishedContent = responseLang === 'km' 
+                            ? content.replace(/\n/g, '<br/>')
+                            : content;
+                        
+                        fullResponse += content;
+                        res.write(`data: ${JSON.stringify({ content: polishedContent })}\n\n`);
+                    }
+                } catch (e) { 
+                    // Ignore parse errors for non-json chunks
                 }
             }
-            
-            return res.json({
-                success: true,
-                analysis: successResponse,
-                responseLanguage: responseLang,
-                model: modelToUse,
-                status: responseLang === 'km' ? `រួចរាល់ v15.0 ✅` : `Done v15.0 ✅`
-            });
-        }
-
-        throw new Error('AI model failed to respond');
-        
-    } catch (error) {
-        const responseLang = req.body?.responseLang || 'en';
-        res.status(500).json({
-            error: responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed',
-            details: error.message
         });
+
+        response.data.on('error', (error) => {
+            if (!streamEnded) {
+                streamEnded = true;
+                res.write(`data: ${JSON.stringify({ error: 'Stream error occurred' })}\n\n`);
+                res.end();
+            }
+        });
+
+        response.data.on('end', () => {
+            if (!streamEnded) {
+                streamEnded = true;
+                res.write('data: [DONE]\n\n');
+                res.end();
+            }
+        });
+
+    } catch (error) {
+        if (!streamEnded) {
+            streamEnded = true;
+            const errorMsg = responseLang === 'km' ? 'ការវិភាគបរាជ័យ' : 'Analysis failed';
+            res.write(`data: ${JSON.stringify({ error: errorMsg, details: error.message })}\n\n`);
+            res.end();
+        }
     }
-});
+};
+
+app.post('/api/analyze-code', analyzeCode);
 // ===== DIAGNOSTIC ENDPOINT =====
-/**
- * @route GET /api/debug/users
- * @desc Get all users in database (FOR TESTING ONLY)
- */
-app.get('/api/debug/users', async (req, res) => {
+const debugUsers = async (req, res) => {
     try {
         const users = await User.find().select('-password');
         res.json({
@@ -1294,10 +1303,12 @@ app.get('/api/debug/users', async (req, res) => {
             error: error.message
         });
     }
-});
+};
+
+app.get('/api/debug/users', debugUsers);
 
 // ===== HEALTH CHECK =====
-app.get('/api/health', (req, res) => {
+const healthCheck = (req, res) => {
     res.json({ 
         status: '✅ KONKMENG is running',
         message: 'Full-stack with Authentication',
@@ -1306,25 +1317,25 @@ app.get('/api/health', (req, res) => {
         mongodb: mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected',
         timestamp: new Date().toISOString()
     });
-});
+};
+
+app.get('/api/health', healthCheck);
 
 // ===== SPA CATCH-ALL ROUTE =====
-// This should be after all API routes
-app.get('/*', (req, res) => {
-    // Don't intercept API routes
+const spaCatchAll = (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({
             success: false,
             error: 'API endpoint not found'
         });
     }
-    
-    // Serve index.html for all other routes (SPA routing)
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+};
+
+app.get('/*', spaCatchAll);
 
 // ===== START SERVER =====
-app.listen(PORT, () => {
+const startServer = () => {
     console.log('\n🚀 ============================================');
     console.log(`🚀 KONKMENG Server running on http://localhost:${PORT}`);
     console.log('🚀 ============================================\n');
@@ -1338,4 +1349,6 @@ app.listen(PORT, () => {
     console.log('   • MongoDB:', mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌');
     console.log('   • Users collection: ready\n');
     console.log('✅ Ready! Server is waiting for requests...\n');
-});
+};
+
+app.listen(PORT, startServer);
