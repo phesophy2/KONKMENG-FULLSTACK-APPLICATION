@@ -1240,14 +1240,24 @@ const getSystemPrompt = (language) => {
 ┌─────────────────────────────────────┐
 │ ⚠️ **បញ្ហា & ការកែលម្អ**              │
 └─────────────────────────────────────┘
-${language === 'km' ? '✅ **អ្វីដែលល្អ:**' : '✅ **Good:**'}
+✅ **អ្វីដែលល្អ:**
 • [ចំណុចវិជ្ជមាន]
 
-${language === 'km' ? '⚠️ **អ្វីដែលត្រូវកែ:**' : '⚠️ **Needs Improvement:**'}
+⚠️ **អ្វីដែលត្រូវកែ:**
 • [ចំណុចដែលត្រូវកែលម្អ]
 
-${language === 'km' ? '💡 **ដំបូន្មាន:**' : '💡 **Suggestions:**'}
+💡 **ដំបូន្មាន:**
 • [ដំបូន្មានកែលម្អ]
+
+┌─────────────────────────────────────┐
+│ ✅ **កូដដែលកែប្រែរួច**                │
+└─────────────────────────────────────┘
+**CRITICAL: This section is MANDATORY. You MUST include the full corrected code.**
+
+\`\`\`${langTag}
+[បង្ហាញកូដពេញលេញដែលបានកែប្រែ និងដំណើរការបានត្រឹមត្រូវ]
+[ប្រសិនបើកូដដើមមិនមានកំហុស សូមបង្ហាញកូដដើមនិងសរសេរ: // កូដនេះត្រឹមត្រូវហើយ]
+\`\`\`
 
 ┌─────────────────────────────────────┐
 │ 📖 **ពន្យល់បន្ទាត់ម្តងមួយៗ**          │
@@ -1281,7 +1291,8 @@ ${language === 'km' ? '💡 **ដំបូន្មាន:**' : '💡 **Suggesti
 - ប្រើ **bold** សម្រាប់ពាក្យសំខាន់
 - ប្រើ \`code\` សម្រាប់ code snippets
 - ប្រើ bullet points (•) ជំនួស hyphens (-)
-- Code blocks ត្រូវតែប្រើ \`\`\`${langTag}\`\`\` (មិនមែន \`\`\`km\`\`\`)`;
+- Code blocks ត្រូវតែប្រើ \`\`\`${langTag}\`\`\` (មិនមែន \`\`\`km\`\`\`)
+- **MUST INCLUDE "✅ កូដដែលកែប្រែរួច" section with full corrected code**`;
     } else {
         return `You are KONKMENG AI v5.1 - An intelligent code explanation AI.
 
@@ -1308,6 +1319,16 @@ ${language === 'km' ? '💡 **ដំបូន្មាន:**' : '💡 **Suggesti
 
 💡 **Suggestions:**
 • [Improvement recommendations]
+
+┌─────────────────────────────────────┐
+│ ✅ **Corrected Code**                │
+└─────────────────────────────────────┘
+**CRITICAL: This section is MANDATORY. You MUST include the full corrected code.**
+
+\`\`\`${langTag}
+[Show the COMPLETE corrected version of the code that works without errors]
+[If the original code has no errors, show it and add comment: // This code is already correct]
+\`\`\`
 
 ┌─────────────────────────────────────┐
 │ 📖 **Line-by-Line Breakdown**        │
@@ -1341,7 +1362,8 @@ ${language === 'km' ? '💡 **ដំបូន្មាន:**' : '💡 **Suggesti
 - Use **bold** for important terms
 - Use \`code\` for code snippets
 - Use bullet points (•) instead of hyphens (-)
-- Code blocks must use \`\`\`${langTag}\`\`\` (not other tags)`;
+- Code blocks must use \`\`\`${langTag}\`\`\` (not other tags)
+- **MUST INCLUDE "✅ Corrected Code" section with full corrected code**`;
     }
 };
 
