@@ -1191,14 +1191,58 @@
                 
             } catch (error) {
                 console.error('Analysis error:', error);
-                output.innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
-                        <p class="text-red-700 font-medium">${error.message}</p>
-                        <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
-                    </div>
-                `;
-                status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-400">Error</span>`;
+                
+                // Check if it's a rate limit error
+                const isRateLimit = error.message.includes('rate limit') || 
+                                  error.message.includes('429') || 
+                                  error.message.includes('quota') ||
+                                  error.message.includes('tokens per day');
+                
+                if (isRateLimit) {
+                    // Extract wait time if available
+                    const waitTimeMatch = error.message.match(/try again in (\d+m\d+\.?\d*s)/);
+                    const waitTime = waitTimeMatch ? waitTimeMatch[1] : '15-30 នាទី';
+                    
+                    output.innerHTML = `
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                            <i data-lucide="clock" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
+                            <h3 class="text-lg font-semibold text-amber-800 mb-3">
+                                ${currentLang === 'km' ? 'API កំពុងបញ្ចប់ការប្រើប្រាស់ប្រចាំថ្ងៃ' : 'Daily API Quota Reached'}
+                            </h3>
+                            <p class="text-amber-700 mb-4 leading-relaxed">
+                                ${currentLang === 'km' 
+                                    ? `ប្រព័ន្ធ AI បានប្រើប្រាស់ token អស់ហើយសម្រាប់ថ្ងៃនេះ។ សូមព្យាយាមម្តងទៀតក្នុងរយៈពេល ${waitTime}` 
+                                    : `Our AI service has reached its daily token limit. Please try again in ${waitTime}`}
+                            </p>
+                            <div class="bg-amber-100 rounded-lg p-3 mb-4">
+                                <p class="text-sm text-amber-600">
+                                    ${currentLang === 'km' 
+                                        ? '💡 នេះបង្ហាញថាសេវាកម្មរបស់យើងពេញនិយម! ប្រព័ន្ធនឹងដំណើរការធម្មតាវិញនៅពេលដែល API quota reset' 
+                                        : '💡 This shows our service is popular! The system will work normally once the API quota resets'}
+                                </p>
+                            </div>
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="location.reload()" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                                    ${currentLang === 'km' ? 'ព្យាយាមម្តងទៀត' : 'Try Again'}
+                                </button>
+                                <button onclick="window.open('https://console.groq.com/settings/billing', '_blank')" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                                    ${currentLang === 'km' ? 'Upgrade Plan' : 'Upgrade Plan'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    status.innerHTML = `<div class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div><span class="text-xs text-amber-400">${currentLang === 'km' ? 'រង់ចាំ API Reset' : 'Waiting for API Reset'}</span>`;
+                } else {
+                    // Show generic error for other issues
+                    output.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                            <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
+                            <p class="text-red-700 font-medium">${error.message}</p>
+                            <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
+                        </div>
+                    `;
+                    status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-400">Error</span>`;
+                }
                 lucide.createIcons();
             } finally {
                 btn.disabled = false;
@@ -1491,14 +1535,58 @@
                 
             } catch (error) {
                 console.error('Analysis error:', error);
-                output.innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
-                        <p class="text-red-700 font-medium">${error.message}</p>
-                        <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
-                    </div>
-                `;
-                status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-600">${t['tool.status_error']}</span>`;
+                
+                // Check if it's a rate limit error
+                const isRateLimit = error.message.includes('rate limit') || 
+                                  error.message.includes('429') || 
+                                  error.message.includes('quota') ||
+                                  error.message.includes('tokens per day');
+                
+                if (isRateLimit) {
+                    // Extract wait time if available
+                    const waitTimeMatch = error.message.match(/try again in (\d+m\d+\.?\d*s)/);
+                    const waitTime = waitTimeMatch ? waitTimeMatch[1] : '15-30 នាទី';
+                    
+                    output.innerHTML = `
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                            <i data-lucide="clock" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
+                            <h3 class="text-lg font-semibold text-amber-800 mb-3">
+                                ${currentLang === 'km' ? 'API កំពុងបញ្ចប់ការប្រើប្រាស់ប្រចាំថ្ងៃ' : 'Daily API Quota Reached'}
+                            </h3>
+                            <p class="text-amber-700 mb-4 leading-relaxed">
+                                ${currentLang === 'km' 
+                                    ? `ប្រព័ន្ធ AI បានប្រើប្រាស់ token អស់ហើយសម្រាប់ថ្ងៃនេះ។ សូមព្យាយាមម្តងទៀតក្នុងរយៈពេល ${waitTime}` 
+                                    : `Our AI service has reached its daily token limit. Please try again in ${waitTime}`}
+                            </p>
+                            <div class="bg-amber-100 rounded-lg p-3 mb-4">
+                                <p class="text-sm text-amber-600">
+                                    ${currentLang === 'km' 
+                                        ? '💡 នេះបង្ហាញថាសេវាកម្មរបស់យើងពេញនិយម! ប្រព័ន្ធនឹងដំណើរការធម្មតាវិញនៅពេលដែល API quota reset' 
+                                        : '💡 This shows our service is popular! The system will work normally once the API quota resets'}
+                                </p>
+                            </div>
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="location.reload()" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">
+                                    ${currentLang === 'km' ? 'ព្យាយាមម្តងទៀត' : 'Try Again'}
+                                </button>
+                                <button onclick="window.open('https://console.groq.com/settings/billing', '_blank')" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
+                                    ${currentLang === 'km' ? 'Upgrade Plan' : 'Upgrade Plan'}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    status.innerHTML = `<div class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div><span class="text-xs text-amber-600">${currentLang === 'km' ? 'រង់ចាំ API Reset' : 'Waiting for API Reset'}</span>`;
+                } else {
+                    // Show generic error for other issues
+                    output.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                            <i data-lucide="alert-circle" class="w-8 h-8 text-red-500 mx-auto mb-3"></i>
+                            <p class="text-red-700 font-medium">${error.message}</p>
+                            <p class="text-red-600 text-sm mt-2">${currentLang === 'km' ? 'ពិនិត្យ server logs និង .env' : 'Check server logs and .env'}</p>
+                        </div>
+                    `;
+                    status.innerHTML = `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs text-red-600">${t['tool.status_error']}</span>`;
+                }
                 lucide.createIcons();
             } finally {
                 btn.disabled = false;
