@@ -111,7 +111,10 @@ async function setupRedis() {
 setupRedis();
 
 // ===== GROQ API CONFIGURATION =====
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+// URGENT: Force new API key to override environment variable
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
+console.log('🔑 Using Groq API Key:', GROQ_API_KEY ? GROQ_API_KEY.substring(0, 20) + '...' : 'NOT SET');
+
 const groq = GROQ_API_KEY ? new Groq({ apiKey: GROQ_API_KEY }) : null;
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
