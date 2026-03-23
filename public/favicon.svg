@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Main curved swoosh shape -->
+  <path d="M 25 45 Q 45 25, 65 45 Q 55 65, 45 70 Q 35 65, 25 45 Z" fill="#4f46e5" stroke="#4f46e5" stroke-width="2"/>
+  <!-- Small dot -->
+  <circle cx="30" cy="38" r="3.5" fill="#4f46e5"/>
+</svg>
