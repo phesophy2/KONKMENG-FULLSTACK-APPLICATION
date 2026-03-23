@@ -34,6 +34,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         /* Prose styling for clean AI response */
+        .prose { @apply max-w-none; }
         .prose h1 { @apply text-3xl font-extrabold text-slate-900 mb-6 mt-8 pb-2 border-b border-slate-200; }
         .prose h2 { @apply text-2xl font-bold text-slate-800 mb-4 mt-8 flex items-center gap-2; }
         .prose h3 { @apply text-xl font-bold text-slate-800 mb-3 mt-6; }
@@ -41,10 +42,25 @@
         .prose ul { @apply list-disc list-outside ml-6 space-y-3 mb-6 text-slate-600; }
         .prose ol { @apply list-decimal list-outside ml-6 space-y-3 mb-6 text-slate-600; }
         .prose code { @apply bg-slate-100 text-indigo-600 px-2 py-0.5 rounded-md font-mono text-sm font-medium; }
-        .prose pre { @apply bg-slate-900 text-indigo-100 p-5 rounded-2xl overflow-x-auto mb-8 font-mono text-sm shadow-xl border border-slate-800; }
+        .prose pre { @apply bg-slate-900 text-indigo-100 p-5 rounded-2xl overflow-x-auto mb-8 font-mono text-sm shadow-xl border border-slate-800 relative; }
+        .prose pre code { @apply bg-transparent text-indigo-100 p-0; }
         .prose blockquote { @apply border-l-4 border-indigo-500 pl-6 italic text-slate-600 mb-6 bg-indigo-50/30 py-4 rounded-r-2xl; }
         .prose hr { @apply border-slate-200 my-10; }
         .prose strong { @apply font-semibold text-slate-900; }
+        
+        /* Corrected code box */
+        .corrected-code-box {
+            @apply bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 mt-8 mb-4 shadow-lg;
+        }
+        .corrected-code-box h4 {
+            @apply text-lg font-bold text-green-800 mb-4 flex items-center gap-2;
+        }
+        .corrected-code-box pre {
+            @apply bg-slate-900 text-green-100 p-4 rounded-lg overflow-x-auto font-mono text-sm relative;
+        }
+        .copy-code-btn {
+            @apply absolute top-2 right-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-md cursor-pointer transition-colors;
+        }
 
         /* Dark theme prose for fullscreen IDE */
         .prose-invert h1 { @apply text-3xl font-extrabold text-slate-100 mb-6 mt-8 pb-2 border-b border-slate-700; }
@@ -268,7 +284,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="output" class="flex-1 h-72 md:h-96 overflow-y-auto p-4">
+                            <div id="output" class="prose flex-1 h-72 md:h-96 overflow-y-auto p-4">
                                 <div id="placeholder" class="h-full flex flex-col items-center justify-center text-slate-400">
                                     <i data-lucide="message-square" class="w-12 h-12 mb-4 opacity-50"></i>
                                     <p class="text-sm" data-t="tool.placeholder"></p>
@@ -801,7 +817,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="fullscreenOutput" class="flex-1 overflow-y-auto p-4">
+                    <div id="fullscreenOutput" class="prose prose-invert flex-1 overflow-y-auto p-4">
                         <div id="fullscreenPlaceholder" class="h-full flex flex-col items-center justify-center text-slate-500">
                             <i data-lucide="message-square" class="w-16 h-16 mb-4 opacity-50"></i>
                             <p class="text-lg mb-2">Your AI analysis will appear here</p>
@@ -1178,8 +1194,9 @@
                     throw new Error(data.error || data.details || 'Analysis failed');
                 }
                 
-                // Animate the response line by line
-                await animateResponse(data.analysis || '<p>No analysis returned</p>', output);
+                // Parse markdown and animate the response
+                const parsedHTML = parseMarkdown(data.analysis || 'No analysis returned');
+                await animateResponse(parsedHTML, output);
                 
                 document.getElementById('fullscreen-copy-btn').classList.remove('hidden');
                 status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-400">Complete</span>`;
@@ -1522,8 +1539,9 @@
                     throw new Error(data.error || data.details || 'Analysis failed');
                 }
                 
-                // Animate the response line by line
-                await animateResponse(data.analysis || '<p>No analysis returned</p>', output);
+                // Parse markdown and animate the response
+                const parsedHTML = parseMarkdown(data.analysis || 'No analysis returned');
+                await animateResponse(parsedHTML, output);
                 
                 document.getElementById('copy-btn').classList.remove('hidden');
                 status.innerHTML = `<div class="w-2 h-2 bg-emerald-500 rounded-full"></div><span class="text-xs text-emerald-600">${t['tool.status_complete']}</span>`;
@@ -1593,6 +1611,78 @@
                 icon.classList.remove('animate-spin');
                 lucide.createIcons();
             }
+        };
+
+        // Simple Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+            
+            // Code blocks with language
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+            });
+            
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+            
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Italic
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            
+            // Lists
+            html = html.replace(/^\* (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/^- (.+)$/gim, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            
+            // Links
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            
+            // Paragraphs
+            html = html.split('\n\n').map(para => {
+                if (!para.trim()) return '';
+                if (para.startsWith('<')) return para;
+                return `<p>${para}</p>`;
+            }).join('\n');
+            
+            return html;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Add corrected code box at the end
+        function addCorrectedCodeBox(container, code, language) {
+            const codeBox = document.createElement('div');
+            codeBox.className = 'corrected-code-box';
+            codeBox.innerHTML = `
+                <h4>
+                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    Corrected Code - Ready to Copy
+                </h4>
+                <pre><button class="copy-code-btn" onclick="copyCorrectedCode(this)">Copy</button><code>${escapeHtml(code)}</code></pre>
+            `;
+            container.appendChild(codeBox);
+        }
+        
+        window.copyCorrectedCode = function(btn) {
+            const code = btn.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const original = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => { btn.textContent = original; }, 2000);
+            });
         };
 
         // Animate response line by line
