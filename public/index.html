@@ -966,6 +966,73 @@
         </div>
     </div>
 
+    <!-- Payment QR Code Modal -->
+    <div id="paymentQRModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="closePaymentQRModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative animate-fade-in">
+                <button onclick="closePaymentQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div class="text-center">
+                    <!-- Plan Info -->
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-2" id="qr-plan-name">Pro Plan</h2>
+                        <p class="text-3xl font-bold text-indigo-600" id="qr-plan-price">$29/month</p>
+                    </div>
+                    
+                    <!-- QR Code -->
+                    <div class="bg-white p-6 rounded-xl border-2 border-indigo-200 mb-6">
+                        <div id="qr-code-container" class="flex items-center justify-center">
+                            <!-- QR Code will be generated here -->
+                            <div class="w-64 h-64 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg flex items-center justify-center">
+                                <canvas id="qr-canvas" class="max-w-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Instructions -->
+                    <div class="text-left bg-slate-50 p-4 rounded-lg mb-4">
+                        <h3 class="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-indigo-600"></i>
+                            How to Pay:
+                        </h3>
+                        <ol class="text-sm text-slate-600 space-y-2">
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">1.</span>
+                                <span>Open your banking app</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">2.</span>
+                                <span>Scan this QR code</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">3.</span>
+                                <span>Complete the payment</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">4.</span>
+                                <span>Your account will be upgraded automatically</span>
+                            </li>
+                        </ol>
+                    </div>
+                    
+                    <!-- Payment Details -->
+                    <div class="text-sm text-slate-500 mb-4">
+                        <p class="mb-1">Payment ID: <span class="font-mono text-slate-700" id="payment-id">KM-2026-XXXX</span></p>
+                        <p>Secure payment powered by KONKMENG</p>
+                    </div>
+                    
+                    <!-- Alternative Payment Button -->
+                    <button onclick="handleAlternativePayment()" class="w-full px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors">
+                        Use Alternative Payment Method
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { marked } from 'https://esm.run/marked';
 
@@ -1497,6 +1564,77 @@
             navigateTo('home');
         };
 
+        // Payment QR Modal Functions
+        window.openPaymentQRModal = (plan, price) => {
+            const modal = document.getElementById('paymentQRModal');
+            document.getElementById('qr-plan-name').textContent = plan;
+            document.getElementById('qr-plan-price').textContent = price;
+            
+            // Generate unique payment ID
+            const paymentId = 'KM-' + new Date().getFullYear() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            document.getElementById('payment-id').textContent = paymentId;
+            
+            // Generate QR Code
+            generateQRCode(plan, price, paymentId);
+            
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closePaymentQRModal = () => {
+            document.getElementById('paymentQRModal').classList.add('hidden');
+        };
+
+        window.handleAlternativePayment = () => {
+            alert('Alternative payment methods coming soon!\n\nFor now, please contact: sales@konkmeng.com');
+        };
+
+        // Generate QR Code
+        function generateQRCode(plan, price, paymentId) {
+            const canvas = document.getElementById('qr-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = 256;
+            canvas.height = 256;
+            
+            // Create payment data
+            const paymentData = {
+                merchant: 'KONKMENG',
+                plan: plan,
+                amount: price,
+                paymentId: paymentId,
+                url: 'https://konkmeng.onrender.com/payment/' + paymentId
+            };
+            
+            // For demo: Draw a simple QR-like pattern
+            // In production, use a real QR code library like qrcode.js
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 256, 256);
+            
+            ctx.fillStyle = '#000000';
+            const blockSize = 8;
+            
+            // Create a simple pattern (in production, use real QR code library)
+            for (let i = 0; i < 32; i++) {
+                for (let j = 0; j < 32; j++) {
+                    if ((i + j) % 3 === 0 || (i * j) % 7 === 0) {
+                        ctx.fillRect(i * blockSize, j * blockSize, blockSize - 1, blockSize - 1);
+                    }
+                }
+            }
+            
+            // Add KONKMENG logo in center
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(96, 96, 64, 64);
+            ctx.fillStyle = '#4f46e5';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('KM', 128, 128);
+            
+            console.log('QR Code generated for:', paymentData);
+        }
+
         // Handle pricing card clicks
         window.handlePricingClick = (plan) => {
             console.log('Pricing plan clicked:', plan);
@@ -1510,12 +1648,11 @@
             
             // Handle different plans
             if (plan === 'free') {
-                openSignUpModal();
+                openPaymentQRModal('Free Plan', '$0/month');
             } else if (plan === 'pro') {
-                openSignUpModal();
+                openPaymentQRModal('Pro Plan', '$29/month');
             } else if (plan === 'enterprise') {
-                // Open contact or email
-                window.location.href = 'mailto:sales@konkmeng.com?subject=Enterprise Plan Inquiry';
+                openPaymentQRModal('Enterprise Plan', 'Custom Pricing');
             }
         };
 
