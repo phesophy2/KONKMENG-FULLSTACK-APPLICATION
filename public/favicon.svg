@@ -1,6 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Main curved swoosh shape -->
-  <path d="M 25 45 Q 45 25, 65 45 Q 55 65, 45 70 Q 35 65, 25 45 Z" fill="#4f46e5" stroke="#4f46e5" stroke-width="2"/>
-  <!-- Small dot -->
-  <circle cx="30" cy="38" r="3.5" fill="#4f46e5"/>
+  <!-- Outer circle -->
+  <circle cx="50" cy="50" r="45" fill="none" stroke="#4f46e5" stroke-width="6"/>
+  
+  <!-- Hair/swoosh on top -->
+  <path d="M 35 30 Q 50 20, 65 35" fill="none" stroke="#4f46e5" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Left ear -->
+  <path d="M 15 45 Q 10 50, 15 55" fill="none" stroke="#4f46e5" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Left eye -->
+  <circle cx="38" cy="48" r="4" fill="#4f46e5"/>
+  
+  <!-- Right eye -->
+  <circle cx="62" cy="48" r="4" fill="#4f46e5"/>
+  
+  <!-- Smile -->
+  <path d="M 35 60 Q 50 70, 65 60" fill="none" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
 </svg>
