@@ -249,6 +249,15 @@
                                         <option value="TypeScript">TypeScript</option>
                                         <option value="Java">Java</option>
                                         <option value="C++">C++</option>
+                                        <option value="C#">C#</option>
+                                        <option value="PHP">PHP</option>
+                                        <option value="Ruby">Ruby</option>
+                                        <option value="Go">Go</option>
+                                        <option value="Rust">Rust</option>
+                                        <option value="Swift">Swift</option>
+                                        <option value="Kotlin">Kotlin</option>
+                                        <option value="SQL">SQL</option>
+                                        <option value="HTML/CSS">HTML/CSS</option>
                                     </select>
                                     <button onclick="loadExample()" class="text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1">
                                         <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
@@ -1465,8 +1474,182 @@
         }
 
         // ===== TOOL LOGIC =====
+        // Example code for all 15 languages
+        const codeExamples = {
+            'JavaScript': `// Fibonacci sequence
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`,
+            
+            'Python': `# Fibonacci sequence
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print(fibonacci(10))`,
+            
+            'TypeScript': `// Fibonacci sequence with types
+function fibonacci(n: number): number {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`,
+            
+            'Java': `// Fibonacci sequence
+public class Fibonacci {
+    public static int fibonacci(int n) {
+        if (n <= 1) return n;
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+    
+    public static void main(String[] args) {
+        System.out.println(fibonacci(10));
+    }
+}`,
+            
+            'C++': `// Fibonacci sequence
+#include <iostream>
+using namespace std;
+
+int fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+int main() {
+    cout << fibonacci(10) << endl;
+    return 0;
+}`,
+            
+            'C#': `// Fibonacci sequence
+using System;
+
+class Program {
+    static int Fibonacci(int n) {
+        if (n <= 1) return n;
+        return Fibonacci(n - 1) + Fibonacci(n - 2);
+    }
+    
+    static void Main() {
+        Console.WriteLine(Fibonacci(10));
+    }
+}`,
+            
+            'PHP': `<?php
+// Fibonacci sequence
+function fibonacci($n) {
+    if ($n <= 1) return $n;
+    return fibonacci($n - 1) + fibonacci($n - 2);
+}
+
+echo fibonacci(10);
+?>`,
+            
+            'Ruby': `# Fibonacci sequence
+def fibonacci(n)
+    return n if n <= 1
+    fibonacci(n - 1) + fibonacci(n - 2)
+end
+
+puts fibonacci(10)`,
+            
+            'Go': `// Fibonacci sequence
+package main
+
+import "fmt"
+
+func fibonacci(n int) int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+func main() {
+    fmt.Println(fibonacci(10))
+}`,
+            
+            'Rust': `// Fibonacci sequence
+fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+fn main() {
+    println!("{}", fibonacci(10));
+}`,
+            
+            'Swift': `// Fibonacci sequence
+func fibonacci(_ n: Int) -> Int {
+    if n <= 1 { return n }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+print(fibonacci(10))`,
+            
+            'Kotlin': `// Fibonacci sequence
+fun fibonacci(n: Int): Int {
+    if (n <= 1) return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fun main() {
+    println(fibonacci(10))
+}`,
+            
+            'SQL': `-- Find top 10 customers by total orders
+SELECT 
+    c.customer_id,
+    c.customer_name,
+    COUNT(o.order_id) as total_orders,
+    SUM(o.total_amount) as total_spent
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.customer_name
+ORDER BY total_spent DESC
+LIMIT 10;`,
+            
+            'HTML/CSS': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Component</title>
+    <style>
+        .card {
+            max-width: 300px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .card h2 {
+            color: #4f46e5;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Hello World</h2>
+        <p>This is a simple card component.</p>
+    </div>
+</body>
+</html>`
+        };
+        
         window.loadExample = () => {
-            document.getElementById('code').value = `// Fibonacci sequence\nfunction fibonacci(n) {\n    if (n <= 1) return n;\n    return fibonacci(n - 1) + fibonacci(n - 2);\n}\n\nconsole.log(fibonacci(10));`;
+            const language = document.getElementById('language').value;
+            const example = codeExamples[language] || codeExamples['JavaScript'];
+            document.getElementById('code').value = example;
         };
 
         window.clearCode = () => {
