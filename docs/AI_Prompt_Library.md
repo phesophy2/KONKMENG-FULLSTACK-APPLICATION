@@ -416,7 +416,7 @@ const response = await axios.post('https://api.groq.com/openai/v1/chat/completio
 
 ---
 
-## 🎓 WHY THIS MATTERS FOR YOUR CLIENT
+## 🎓 WHY THIS MATTERS 
 
 ### 1. **Quality Control**
 
