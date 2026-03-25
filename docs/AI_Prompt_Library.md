@@ -621,7 +621,7 @@ The AI Prompt Library = Our recipe book that ensures every dish (response) is pe
 
 **Version**: 1.0  
 **Last Updated**: March 25, 2026  
-**Maintained by**: KONKMENG Development Team
+**Maintained by**: PHE SOPHY  FOUNDER Of KONKMENG
 
 ---
 
